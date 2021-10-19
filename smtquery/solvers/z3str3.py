@@ -3,6 +3,7 @@ import subprocess
 
 class Z3(solvers.solver.Solver):
     def __init__(self,binarypath,variation = "Str3",stringsolver ="z3str3"):
+        super().__init__(binarypath)
         self._path = binarypath
         self._variation = variation
         self._stringsolver = stringsolver

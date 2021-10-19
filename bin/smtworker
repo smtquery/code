@@ -1,0 +1,21 @@
+#!python3
+
+import argparse
+import smtquery.solvers
+import smtquery.config
+import smtquery.storage.smt.fs
+import smtquery.scheduling
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument ('--confloc',dest="conf",type=str,default="./data/conf")
+
+
+args = parser.parse_args ()
+
+filelocator = smtquery.config.FileLocator ([args.conf])
+schedule = smtquery.scheduling.createFrontScheduler (filelocator)
+schedule.workerQueue ()
+    
+
+

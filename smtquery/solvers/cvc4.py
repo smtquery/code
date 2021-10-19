@@ -3,6 +3,7 @@ import subprocess
 
 class CVC4(solver.Solver):
     def __init__(self,binarypath):
+        super().__init__(binarypath)
         self._path = binarypath
         
     def getVersion (self):

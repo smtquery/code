@@ -1,0 +1,3 @@
+SMTStore:
+  name: FS
+  root: /home/caramon/Development/smtquery/data/smtfiles

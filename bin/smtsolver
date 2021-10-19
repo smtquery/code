@@ -1,0 +1,33 @@
+#!python3
+
+import argparse
+import smtquery.solvers
+import smtquery.config
+import smtquery.storage.smt.fs
+import smtquery.scheduling
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument ('--confloc',dest="conf",type=str,default="./data/conf")
+parser.add_argument ('solver',type=str,default="CVC4")
+parser.add_argument ('track',type=str,default="track")
+parser.add_argument ('smtfile',type=str,default="model")
+
+
+args = parser.parse_args ()
+
+filelocator = smtquery.config.FileLocator ([args.conf])
+storage = smtquery.storage.smt.createStorage (filelocator)
+schedule = smtquery.scheduling.createFrontScheduler (filelocator)
+
+solver = smtquery.solvers.createSolvers (filelocator)[args.solver]
+track = storage.searchForTrack (args.track)
+if track and solver:
+    print (solver.calcHash ())
+    file = track.searchFile (args.smtfile)
+    res = schedule.run (solver,(file,))#solver.runSolver (file)
+    res.wait ()
+    print (res.get())
+    
+
+

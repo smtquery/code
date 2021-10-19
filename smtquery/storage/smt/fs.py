@@ -3,8 +3,9 @@ import hashlib
 import shutil
 
 class SMTFile:
-    def __init__(self,filepath):
+    def __init__(self,name,filepath):
         assert (os.path.exists(filepath))
+        self._name = name
         self._filepath = filepath
         
         
@@ -20,7 +21,7 @@ class SMTFile:
     def copyOutSMTFile (self,directory):
         name = os.path.split (self._filepath)[1]
         shutil.copyfile (self._filepath,os.path.join (directory,name))
-        
+        return os.path.join (directory,name)
         
 class SMTTrack:
     def __init__(self,name, directory):
@@ -32,21 +33,37 @@ class SMTTrack:
         for root, dirs,files in os.walk (self._directory):
             for f in files:
                 if f.endswith (".smt"):
-                    yield SMTFile (os.path.join (root,f))
+                    yield SMTFile (f"{self._name}:{f}",os.path.join (root,f))
     
-                    
-    
+
+    def searchFile (self,searchname):
+        if searchname.endswith (".smt"):
+            name = searchname
+        else:
+            name = f"{searchname}.smt"
+        if os.path.exists (os.path.join (self._directory,name)):
+            return SMTFile (f"{self._name}:{name}",os.path.join (self._directory,name))
+        else:
+            return None
+        
 
 class SMTStorage:
     def __init__(self,directory):
         self._directory = directory
         assert(os.path.exists (self._directory))
-
+        
+        
     def tracksInStore (self):
         for root, dirs,files in os.walk (self._directory):
             if len(files) > 0:
-                d = os.path.split ( root)[1]
+                d = os.path.split (root)[1]
                 yield SMTTrack (f"{d}",root)
-    
+                
+    def searchForTrack (self,name):
+        if os.path.exists (os.path.join (self._directory,name)):
+            return SMTTrack (name,os.path.join (self._directory,name))
+        else:
+            return None
 
+    
             

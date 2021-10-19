@@ -5,6 +5,7 @@ import tempfile
 import shutil
 import os
 import logging
+import hashlib
 
 class Timer:
     def __enter__ (self):
@@ -22,7 +23,7 @@ class Result(enum.Enum):
     NotSatisfied  = 1
     Unknown = 2
     TimeOut = 3
-
+    ErrorTermination = 4
 
 class VerificationResult:
     def __init__ (self,result: Result,
@@ -37,26 +38,36 @@ class VerificationResult:
         return self._result
 
     def getTime (self):
-        return self._time_in_milli
+        return self._time_in_seconds
 
     def getModel (self):
         return self._model
 
+    def __str__ (self):
+        return f"{self._result.name} in {self._time_in_seconds} seconds" 
+    
 class Solver:
+    def __init__(self,command):
+        self._command = command
+
     def getVersion (self) -> str:
         return "0.0"
 
     def getName (self) -> str:
         return "Dummy"
+
+    def calcHash (self):
+        with open(self._command,'br') as ff:
+            return hashlib.sha256 (ff.read()).hexdigest ()
     
     def preprocessSMTFile  (self, origsmt, newsmt):
         shutil.copy(origsmt,newsmt)
     
     def postprocess (self,directory, stdout,time):
-        if "sat" in stdout:
-            return VerificationResult (Result.Satisfied,time,"\n".join (stdout.splitlines()[1:]))
-        elif "unsat" in stdout:
+        if "unsat" in stdout:
             return VerificationResult (Result.NotSatisfied,time,"")
+        elif "sat" in stdout:
+            return VerificationResult (Result.Satisfied,time,"\n".join (stdout.splitlines()[1:])) 
         else:
             return VerificationResult (Result.Unknown,time,"")
         
@@ -64,10 +75,12 @@ class Solver:
         return ["echo", smtfilepath]
     
 
-    def runSolver (self,smtpath,timeout = None)->VerificationResult:
+    def runSolver (self,smtfile,timeout = None)->VerificationResult:
         with tempfile.TemporaryDirectory () as tmpdir:
             usepath = os.path.join (tmpdir,"input.smt")
+            smtpath = smtfile.copyOutSMTFile (tmpdir)
             self.preprocessSMTFile (smtpath,usepath)
+            
             timer = Timer ()
             try:
                 with timer:
@@ -76,8 +89,11 @@ class Solver:
                 #Sub-process returned non-zero value
                 print (cer.stdout)
                 logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for {smtpath}")
-                return VerificationResult (Result.Unknown,timer.getElapsed(),"")
+                return VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
             except subprocess.TimeoutExpired:
                 return VerificationResult (Result.TimeOut,timer.getElapsed(),"")
             return self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
         
+    def __call__ (self,params):
+        return self.runSolver (*params)
+    

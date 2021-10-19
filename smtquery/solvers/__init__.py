@@ -19,15 +19,8 @@ def createSolvers (filelocator):
     solverarr = {}
     if conffile:
         with open (conffile,'r') as ff:
-            data = yaml.load (ff)
+            data = yaml.load (ff,Loader=yaml.Loader)
             for solvername,sdata in data["solvers"].items ():
                 solverarr[solvername] = createSolver ( solvername,sdata["binary"])
         return solverarr
-    else:
-        for name,binary in [("CVC4","cvc4"),("Z3Str3","z3"),("Z3Seq","z3")]:
-            bin = shutil.which  (binary)
-            if bin:
-                solverarr[name] = createSolver (name,bin)
-        return solverarr
-        
     

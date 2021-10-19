@@ -1,0 +1,5 @@
+solvers:
+  Z3Str3:
+    binary: /usr/bin/z3
+  CVC4:
+    binary: /usr/bin/cvc4

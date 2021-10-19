@@ -6,6 +6,7 @@ class FileLocator:
         self._roots = paths
 
     def findFile (self,name):
+        
         for p in self._roots:
             path = os.path.join (p,name)
             if os.path.exists (path):
