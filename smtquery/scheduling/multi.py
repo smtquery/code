@@ -4,9 +4,12 @@ class Queue:
     def __init__(self,N = 5):
         self._pool = multiprocessing.pool.Pool (N)
 
-    def run (self,func,params):
-        return self._pool.apply_async (func,params)
+    def runSolver (self,func,smtfile,timeout):
+        return self._pool.apply_async (func.runSolver,(smtfile,timeout))
 
+    def interpretSolverRes (self,res):
+        return res.get ()
+    
     def workerQueue (self):
         pass
 

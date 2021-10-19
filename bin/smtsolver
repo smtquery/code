@@ -25,9 +25,9 @@ track = storage.searchForTrack (args.track)
 if track and solver:
     print (solver.calcHash ())
     file = track.searchFile (args.smtfile)
-    res = schedule.run (solver,(file,))#solver.runSolver (file)
+    res = schedule.runSolver (solver,file,None)#solver.runSolver (file)
     res.wait ()
-    print (res.get())
+    print (schedule.interpretSolverRes (res))
     
 
 

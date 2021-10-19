@@ -12,7 +12,7 @@ class Z3(solver.Solver):
         return subprocess.check_output ([self._path,"--version"])
 
     def getName (self):
-        return "Z3"+variation
+        return "Z3"+self._variation
     
     def preprocessSMTFile  (self, origsmt, newsmt):
         with open(origsmt,'r') as orig, open(newsmt,'w') as new:

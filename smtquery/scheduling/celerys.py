@@ -1,20 +1,35 @@
 import celery
 
+import smtquery.solvers
+import smtquery.solvers.solver
+
+import smtquery.storage.smt
+
 
 
 def setupCelery ():
     app = celery.Celery ("SMTQuery",
                          backend='rpc://'
                          )
-    app.conf.update (
-        accept_content = ['pickle'],
-        result_serializer = 'pickle'
-    )
     
     @app.task (name="runFunc")
-    def runFunc (func,params):
-        return func(params)
-    
+    def runFunc (data):
+        print (data)
+        print (smtquery.solvers.solverarr)
+
+        solver = smtquery.solvers.solverarr[data["solver"]]
+        timeout = data["timeout"]
+        split = data["smtname"].split (":")
+        track = smtquery.storage.smt.storage.searchForTrack (split[0]) 
+        if track:
+            file = track.searchFile (split[1])
+            res = solver.runSolver (file,timeout)
+            return {"result" : res.getResult ().value,
+                    "time" : res.getTime (),
+                    "model" : res.getModel ()
+                    }
+            
+        return "None"
     
     return app,runFunc
     
@@ -24,10 +39,19 @@ class Queue:
         self._apps,self._func = setupCelery ()
         
        
-    def run (self,func,params):
-         return self._func.apply_async  (args =  (func,params), serializer = "pickle")
+    def runSolver (self,func,smtfile,timeout):
+        serialize = {"solver" : func.getName (),
+                     "smtname" : smtfile.getName (),
+                     "timeout" : timeout}
+        return self._func.apply_async  (args =  (serialize,))
 
-
+    def interpretSolverRes (self,res):
+        jss = res.get ()
+        return smtquery.solvers.solver.VerificationResult ( smtquery.solvers.solver.Result(jss["result"]),
+                                                            jss["time"],
+                                                            jss["model"]
+                                                        )
+        
     def workerQueue (self):
         worker = self._apps.Worker ()
         worker.start ()

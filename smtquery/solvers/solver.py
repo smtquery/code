@@ -94,6 +94,4 @@ class Solver:
                 return VerificationResult (Result.TimeOut,timer.getElapsed(),"")
             return self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
         
-    def __call__ (self,params):
-        return self.runSolver (*params)
     

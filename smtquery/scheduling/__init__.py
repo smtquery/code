@@ -12,3 +12,5 @@ def createFrontScheduler (filelocator):
                 return smtquery.scheduling.multi.Queue (int(data["scheduler"]["cores"]))        
             if data["scheduler"]["name"] == "celery":
                 return smtquery.scheduling.celerys.Queue ("HH")
+
+

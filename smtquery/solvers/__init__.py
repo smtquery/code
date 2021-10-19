@@ -4,6 +4,8 @@ import smtquery.solvers.cvc4
 import smtquery.solvers.z3
 import yaml
 
+solverarr = {}
+
 def createSolver (name,binarypath):
     if name == "CVC4":
         return smtquery.solvers.cvc4.CVC4 (binarypath)
@@ -16,7 +18,7 @@ def createSolver (name,binarypath):
 
 def createSolvers (filelocator):
     conffile = filelocator.findFile ("solvers.yml")
-    solverarr = {}
+    global solverarr
     if conffile:
         with open (conffile,'r') as ff:
             data = yaml.load (ff,Loader=yaml.Loader)

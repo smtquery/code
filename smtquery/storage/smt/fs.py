@@ -22,7 +22,10 @@ class SMTFile:
         name = os.path.split (self._filepath)[1]
         shutil.copyfile (self._filepath,os.path.join (directory,name))
         return os.path.join (directory,name)
-        
+
+    def getName (self):
+        return self._name
+    
 class SMTTrack:
     def __init__(self,name, directory):
         self._name = name
@@ -64,6 +67,6 @@ class SMTStorage:
             return SMTTrack (name,os.path.join (self._directory,name))
         else:
             return None
-
+    
     
             

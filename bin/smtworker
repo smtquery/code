@@ -14,7 +14,10 @@ parser.add_argument ('--confloc',dest="conf",type=str,default="./data/conf")
 args = parser.parse_args ()
 
 filelocator = smtquery.config.FileLocator ([args.conf])
+smtquery.solvers.createSolvers (filelocator)
+smtquery.storage.smt.createStorage (filelocator)
 schedule = smtquery.scheduling.createFrontScheduler (filelocator)
+
 schedule.workerQueue ()
     
 
