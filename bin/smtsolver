@@ -10,6 +10,7 @@ import smtquery.scheduling
 parser = argparse.ArgumentParser()
 parser.add_argument ('--confloc',dest="conf",type=str,default="./data/conf")
 parser.add_argument ('solver',type=str,default="CVC4")
+parser.add_argument ('benchmark',type=str,default="dummbench")
 parser.add_argument ('track',type=str,default="track")
 parser.add_argument ('smtfile',type=str,default="model")
 
@@ -17,14 +18,12 @@ parser.add_argument ('smtfile',type=str,default="model")
 args = parser.parse_args ()
 
 filelocator = smtquery.config.FileLocator ([args.conf])
-storage = smtquery.storage.smt.createStorage (filelocator)
-schedule = smtquery.scheduling.createFrontScheduler (filelocator)
+solvers,schedule,storage = smtquery.config.readConfig (args.conf)
 
-solver = smtquery.solvers.createSolvers (filelocator)[args.solver]
-track = storage.searchForTrack (args.track)
-if track and solver:
-    print (solver.calcHash ())
-    file = track.searchFile (args.smtfile)
+solver = solvers[args.solver]
+
+file = storage.searchFile (args.benchmark,args.track,args.smtfile)
+if file:
     res = schedule.runSolver (solver,file,None)#solver.runSolver (file)
     res.wait ()
     print (schedule.interpretSolverRes (res))

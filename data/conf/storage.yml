@@ -1,3 +1,4 @@
 SMTStore:
-  name: FS
+  name: DBFS
   root: /home/caramon/Development/smtquery/data/smtfiles
+  engine_string: sqlite:///db.sql
