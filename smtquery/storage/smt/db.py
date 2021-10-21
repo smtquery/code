@@ -1,7 +1,7 @@
 import os
 import shutil
 import sqlalchemy
-
+import z3
 
 
 meta = sqlalchemy.MetaData ()
@@ -21,7 +21,19 @@ instance_table = sqlalchemy.Table ('instance', meta,
                              sqlalchemy.Column ('id',sqlalchemy.Integer,primary_key = True),
                              sqlalchemy.Column ('path',sqlalchemy.String(1024)),
                              sqlalchemy.Column ('name',sqlalchemy.String(255)),
-                             sqlalchemy.Column ('track_id',sqlalchemy.Integer,sqlalchemy.ForeignKey('track.id'),nullable=False)
+                             sqlalchemy.Column ('track_id',sqlalchemy.Integer,sqlalchemy.ForeignKey('track.id'),nullable=False),
+                             sqlalchemy.Column ('weq',sqlalchemy.Integer),
+                             sqlalchemy.Column ('length',sqlalchemy.Integer),
+                             sqlalchemy.Column ('regex',sqlalchemy.Integer),
+                             sqlalchemy.Column ('At',sqlalchemy.Integer),
+                             sqlalchemy.Column ('str.substr',sqlalchemy.Integer),
+                             sqlalchemy.Column ('PrefixOf',sqlalchemy.Integer),
+                             sqlalchemy.Column ('SuffixOf',sqlalchemy.Integer),
+                             sqlalchemy.Column ('Contains',sqlalchemy.Integer),
+                             sqlalchemy.Column ('IndexOf',sqlalchemy.Integer),
+                             sqlalchemy.Column ('Replace',sqlalchemy.Integer),
+                             sqlalchemy.Column ('IntToStr',sqlalchemy.Integer),
+                             sqlalchemy.Column ('StrToInt',sqlalchemy.Integer)
                                        )  
         
 
@@ -82,10 +94,53 @@ class Benchmark:
     def getName (self):
         return self._name
 
+class ProbeSMTFiles():
+    hofunc = ["At","str.substr","PrefixOf","SuffixOf","Contains","IndexOf","Replace","IntToStr","StrToInt"]
+    def __init__(self):
+        self.s = z3.Solver()
+
+    def getZ3AST(self,instance_path):
+        return z3.parse_smt2_file(instance_path)
+
+    def _mergeData(self,d1,d2):
+        for k in d1.keys():
+            if isinstance(d1[k],int):
+                d1[k] = d1[k]+d2[k]
+            else:
+                d1[k] = self._mergeData(d1[k],d2[k])
+        return d1
+    
+    def traverseAst(self,ast):
+        data = {"weq":0,"length":0,"regex":0,"hof":{f : 0 for f in self.hofunc}}
+        if type(ast) in [z3.z3.AstVector]:
+            for x in ast:
+                data = self._mergeData(data,self.traverseAst(x))
+        else:
+            children = ast.children()
+            if len(children) == 0:
+                return data
+            op = ast.decl()
+            if type(ast) == z3.z3.BoolRef and len(children) == 2 and str(children[0].sort()) == "String" and children[0].sort() == children[1].sort():
+                data["weq"]+=1
+            elif type(ast) == z3.z3.BoolRef and len(children) == 2 and str(children[0].sort()) == "Int" and children[0].sort() == children[1].sort():
+                data["length"]+=1
+            elif str(op) == "InRe":
+                data["regex"]+=1
+            elif str(op) in self.hofunc:
+                data["hof"][str(op)]+=1
+
+            for x in children:
+                data = self._mergeData(data,self.traverseAst(x))
+        return data
+
+    def processInstance(self,path):
+        return self.traverseAst(self.getZ3AST(path))
+
 class DBFSStorage:
     def __init__ (self,root,enginestring):
         self._root = os.path.abspath(root)        
         self._engine = sqlalchemy.create_engine(enginestring)
+        self._smtProbe = ProbeSMTFiles()
 
     def initialise_db (self):
         meta.create_all (self._engine)
@@ -108,10 +163,17 @@ class DBFSStorage:
             
                 for instance in os.listdir (trackpath):
                     instancepath = os.path.join (trackpath,instance)
-                    conn.execute (instance_table.insert ().values (name = f"{bench}:{track}:{instance}",
-                                                                   path = instancepath,
-                                                                   track_id = track_id)
-                                  )
+                    dbvalues = {"name": f"{bench}:{track}:{instance}",
+                                "path": instancepath,
+                                "track_id": track_id}
+                    instancedata = self._smtProbe.processInstance(instancepath)
+                    for k in instancedata.keys():
+                        if isinstance(instancedata[k],int):
+                            dbvalues[k] = instancedata[k]
+                        elif isinstance(instancedata[k],dict):
+                            for kk in instancedata[k].keys():
+                                dbvalues[kk] = instancedata[k][kk]
+                    conn.execute (instance_table.insert ().values ([dbvalues]))
         
         
     def getBenchmarks (self):
