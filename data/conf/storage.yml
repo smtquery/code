@@ -1,4 +1,4 @@
 SMTStore:
   name: DBFS
-  root: /home/caramon/Development/smtquery/data/smtfiles
+  root: /Users/mku/Documents/Uni_WORK/29_SMTQuery/smtquery/data/smtfiles
   engine_string: sqlite:///db.sql
