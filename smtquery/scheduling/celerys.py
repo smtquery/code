@@ -5,7 +5,7 @@ import smtquery.solvers.solver
 
 import smtquery.storage.smt
 
-
+store = None
 
 def setupCelery ():
     app = celery.Celery ("SMTQuery",
@@ -23,7 +23,7 @@ def setupCelery ():
         track = smtquery.storage.smt.storage.searchForTrack (split[0]) 
         if track:
             file = track.searchFile (split[1])
-            res = solver.runSolver (file,timeout)
+            res = solver.runSolver (file,timeout,store)
             return {"result" : res.getResult ().value,
                     "time" : res.getTime (),
                     "model" : res.getModel ()
@@ -52,6 +52,8 @@ class Queue:
                                                             jss["model"]
                                                         )
         
-    def workerQueue (self):
+    def workerQueue (self,storage):
+        global store
         worker = self._apps.Worker ()
+        store = storage
         worker.start ()

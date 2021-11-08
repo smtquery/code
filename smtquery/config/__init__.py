@@ -1,9 +1,9 @@
 from smtquery.config.FileLocator import * 
-
+import smtquery.solvers
+import smtquery.storage.smt
+import smtquery.scheduling
+    
 def readConfig (confdir):
-    import smtquery.solvers
-    import smtquery.storage.smt
-    import smtquery.scheduling
     
     floc = FileLocator ([confdir])
     smtquery.solvers.createSolvers (floc)

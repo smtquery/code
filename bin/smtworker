@@ -13,11 +13,11 @@ parser.add_argument ('--confloc',dest="conf",type=str,default="./data/conf")
 
 args = parser.parse_args ()
 
-smtquery.config.readConfig (args.conf)
+solvers,schedule,storage = smtquery.config.readConfig (args.conf)
 schedule = smtquery.scheduling.scheduler 
 
 
-schedule.workerQueue ()
+schedule.workerQueue (storage)
     
 
 
