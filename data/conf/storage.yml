@@ -1,4 +1,4 @@
 SMTStore:
   name: DBFS
-  root: /Users/mku/Documents/Uni_WORK/29_SMTQuery/smtquery/data/smtfiles
+  root: data/smtfiles
   engine_string: sqlite:///db.sql

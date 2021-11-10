@@ -121,12 +121,12 @@ class ProbeSMTFiles():
         else:
             children = ast.children()
             if len(children) == 0:
-                if str(ast.sort()) == "String":
-                    if not ast.is_string_value():
-                        x = str(ast)
-                        if x not in data["variables"]:
-                            data["variables"][x] = 0
-                        data["variables"][x]+=1
+                #if str(ast.sort()) == "String":
+                #    if not ast.is_string_value():
+                #        x = str(ast)
+                #        if x not in data["variables"]:
+                #            data["variables"][x] = 0
+                #        data["variables"][x]+=1
                 return data
             op = ast.decl()
             if str(op) == "InRe":
@@ -140,6 +140,7 @@ class ProbeSMTFiles():
 
             for x in children:
                 data = self._mergeData(data,self.traverseAst(x))
+        print (data)
         return data
 
     def processInstance(self,path):
@@ -182,6 +183,7 @@ class DBFSStorage:
                         elif isinstance(instancedata[k],dict):
                             for kk in instancedata[k].keys():
                                 dbvalues[kk] = instancedata[k][kk]
+                    print (dbvalues)
                     conn.execute (instance_table.insert ().values ([dbvalues]))
         
         
