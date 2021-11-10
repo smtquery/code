@@ -2,7 +2,8 @@ import os
 import shutil
 import sqlalchemy
 import z3
-
+import datetime
+import smtquery.solvers.solver
 
 meta = sqlalchemy.MetaData ()
         
@@ -12,9 +13,9 @@ benchmark_table  = sqlalchemy.Table ('benchmark',meta,
                                )
 
 tracks_table = sqlalchemy.Table ('track',meta,
-                           sqlalchemy.Column ('id',sqlalchemy.Integer,primary_key = True),
-                           sqlalchemy.Column ('name',sqlalchemy.String (255),nullable = False),
-                        sqlalchemy.Column ('bench_id',sqlalchemy.Integer,sqlalchemy.ForeignKey('benchmark.id'),nullable=False)
+                                 sqlalchemy.Column ('id',sqlalchemy.Integer,primary_key = True),
+                                 sqlalchemy.Column ('name',sqlalchemy.String (255),nullable = False),
+                                 sqlalchemy.Column ('bench_id',sqlalchemy.Integer,sqlalchemy.ForeignKey('benchmark.id'),nullable=False)
                                  )
 
 instance_table = sqlalchemy.Table ('instance', meta,
@@ -37,11 +38,22 @@ instance_table = sqlalchemy.Table ('instance', meta,
                                        )  
         
 
+result_table = sqlalchemy.Table ('verification_result', meta,
+                                 sqlalchemy.Column ('id',sqlalchemy.Integer,primary_key = True),
+                                 sqlalchemy.Column ('instance_id',sqlalchemy.Integer,sqlalchemy.ForeignKey('instance.id'),nullable=False),
+                                 sqlalchemy.Column ('result',sqlalchemy.Enum(smtquery.solvers.solver.Result),nullable=False),
+                                 sqlalchemy.Column ('solver', sqlalchemy.String (255),nullable=False),
+                                 sqlalchemy.Column ('time', sqlalchemy.Float,nullable=False),
+                                 sqlalchemy.Column ('model', sqlalchemy.Text),
+                                 sqlalchemy.Column ('date', sqlalchemy.DateTime),
+                                 )
+                                 
 class SMTFile:
-    def __init__(self,name,filepath):
+    def __init__(self,name,filepath,id):
         assert (os.path.exists(filepath))
         self._name = name
         self._filepath = filepath
+        self._id = id
         
         
     def SMTString (self):
@@ -61,6 +73,8 @@ class SMTFile:
     def getName (self):
         return self._name
 
+    def getId (self):
+        return self._id
 
 class Track:
     def __init__ (self,name,engine,id):
@@ -72,7 +86,7 @@ class Track:
         conn = self._engine.connect ()
         res = conn.execute (instance_table.select().where (instance_table.c.track_id == self._id))
         for row in res.fetchall ():
-            yield SMTFile (row.name,row.path)
+            yield SMTFile (row.name,row.path,row.id)
 
     def getName (self):
         return self._name
@@ -121,12 +135,12 @@ class ProbeSMTFiles():
         else:
             children = ast.children()
             if len(children) == 0:
-                #if str(ast.sort()) == "String":
-                #    if not ast.is_string_value():
-                #        x = str(ast)
-                #        if x not in data["variables"]:
-                #            data["variables"][x] = 0
-                #        data["variables"][x]+=1
+            #    if str(ast.sort()) == "String":
+            #        if not ast.is_string_value():
+            #            x = str(ast)
+            #            if x not in data["variables"]:
+            #                data["variables"][x] = 0
+            #            data["variables"][x]+=1
                 return data
             op = ast.decl()
             if str(op) == "InRe":
@@ -140,7 +154,6 @@ class ProbeSMTFiles():
 
             for x in children:
                 data = self._mergeData(data,self.traverseAst(x))
-        print (data)
         return data
 
     def processInstance(self,path):
@@ -183,7 +196,6 @@ class DBFSStorage:
                         elif isinstance(instancedata[k],dict):
                             for kk in instancedata[k].keys():
                                 dbvalues[kk] = instancedata[k][kk]
-                    print (dbvalues)
                     conn.execute (instance_table.insert ().values ([dbvalues]))
         
         
@@ -197,5 +209,20 @@ class DBFSStorage:
         conn = self._engine.connect ()
         res = conn.execute (instance_table.select ().where ( instance_table.c.name == f"{bench}:{track}:{file}"))
         for row in res.fetchall ():
-            return SMTFile (row.name,row.path)
+            return SMTFile (row.name,row.path,row.id)
         return None
+
+    def storeResult (self,result,smtfile,solver):
+        conn = self._engine.connect ()
+        query = result_table.insert().values (
+            instance_id = smtfile.getId (),
+            result = result.getResult(),
+            solver = solver.getName(),
+            time = result.getTime(),
+            model = result.getModel (),
+            date = datetime.datetime.now ()
+        )
+
+        
+        conn.execute (query)
+        

@@ -2,6 +2,7 @@ import logging
 import shutil
 import smtquery.solvers.cvc4
 import smtquery.solvers.z3
+import smtquery.solvers.solver
 import yaml
 
 solverarr = {}

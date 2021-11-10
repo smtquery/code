@@ -1,7 +1,6 @@
 #!python3
 
 import argparse
-import smtquery.solvers
 import smtquery.config
 import smtquery.storage.smt.fs
 import smtquery.scheduling
