@@ -1,5 +1,6 @@
 #!python3
 
+import os
 import argparse
 import smtquery.solvers
 import smtquery.config
@@ -13,11 +14,12 @@ parser.add_argument ('--confloc',dest="conf",type=str,default="./data/conf")
 
 args = parser.parse_args ()
 
-solvers,schedule,storage = smtquery.config.readConfig (args.conf)
-schedule = smtquery.scheduling.scheduler 
+with open (os.path.join (args.conf,"conf.yml"),'r') as ff:
+    smtquery.config.readConfig (ff)
+schedule = smtquery.config.conf.getScheduler () 
+print (smtquery.config.conf.getSolvers ()) 
 
-
-schedule.workerQueue (storage)
+schedule.workerQueue (smtquery.config.conf.getStorage ())
     
 
 

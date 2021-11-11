@@ -3,7 +3,7 @@ import multiprocessing.pool
 import smtquery.storage.smt
 
 def callback (solver,smtfile,res):
-    store = smtquery.storage.smt.storage
+    store = smtquery.config.conf.getStorage ()
     store.storeResult (res,smtfile,solver)
     
 

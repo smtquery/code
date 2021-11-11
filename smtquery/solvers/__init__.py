@@ -17,13 +17,5 @@ def createSolver (name,binarypath):
     else:
         raise "Unknown Solver Instance"
 
-def createSolvers (filelocator):
-    conffile = filelocator.findFile ("solvers.yml")
-    global solverarr
-    if conffile:
-        with open (conffile,'r') as ff:
-            data = yaml.load (ff,Loader=yaml.Loader)
-            for solvername,sdata in data["solvers"].items ():
-                solverarr[solvername] = createSolver ( solvername,sdata["binary"])
-        return solverarr
+
     

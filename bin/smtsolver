@@ -17,11 +17,15 @@ parser.add_argument ('smtfile',type=str,default="model")
 args = parser.parse_args ()
 
 filelocator = smtquery.config.FileLocator ([args.conf])
-solvers,schedule,storage = smtquery.config.readConfig (args.conf)
+with open (filelocator.findFile("conf.yml")) as ff:
+    smtquery.config.readConfig (ff)
 
-solver = solvers[args.solver]
+solver = smtquery.config.conf.getSolvers ()[args.solver]
+storage = smtquery.config.conf.getStorage ()
+schedule = smtquery.config.conf.getScheduler ()
 
 file = storage.searchFile (args.benchmark,args.track,args.smtfile)
+
 if file:
     res = schedule.runSolver (solver,file,None)#solver.runSolver (file)
     res.wait ()
