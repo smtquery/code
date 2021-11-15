@@ -34,6 +34,10 @@ class ASTRef:
             neutral = e.get_intel()[key]
         self.intel[key] = neutral
 
+    def apply_function(self,f):
+        for e in self.nodes:
+            e.apply_function(f)
+
     def get_intel(self):
         return self.intel
 
@@ -127,6 +131,11 @@ class ExprRef:
 
         # merge the intel
         #self._merge_intel_from_children()
+
+    def apply_function(self,f):
+        for c in self.children():
+            c.apply_function(f)
+        f(self)
 
     def get_intel(self):
         return self.intel
