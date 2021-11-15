@@ -7,25 +7,86 @@ class Sort(Enum):
     RegEx = 4
 
 class Kind(Enum):
-    Variable = 1
-    Constant = 2
-    Other = 3
+    VARIABLE = 1
+    CONSTANT = 2
+    WEQ = 3
+    REGEX_CONSTRAINT = 4
+    LENGTH_CONSTRAINT = 5
+    HOL_FUNCTION = 6
+    OTHER = 7
+
+class ASTRef:
+    nodes = []
+    intel = dict()
+
+    def __init__(self):
+        self.intel["variables"] = dict()
+
+    def add_node(self,expr):
+        expr.add_intel_with_function(self._intel_gatherVariables,self.intel["variables"],"variables")
+        self.intel["variables"] = expr.get_intel()["variables"]
+        self.nodes+=[expr]
+
+    # f : Expr x Value -> Value
+    def add_intel_with_function(self,f,neutral=0,key="test"):
+        for e in self.nodes:
+            e.add_intel_with_function(f,neutral,key)
+            neutral = e.get_intel()[key]
+        self.intel[key] = neutral
+
+    def get_intel(self):
+        return self.intel
+
+    # intel function for variables
+    def _intel_gatherVariables(self,expr,d):
+        if expr.is_variable():
+            sort = str(expr.sort())
+            decl = str(expr.decl())
+            if sort not in d:
+                d[sort] = set()
+            if decl not in d[sort]:
+                d[sort].add(decl)
+        return d
+
+    ## output
+    def _getPPSMTHeader(self):
+        return f"(set-logic QF_SLIA)"
+
+    def _getPPSMTFooter(self):
+        return f"(check-sat)"
+
+    def _getPPVariables(self):
+        var_map = lambda t,var : f"(declare-fun {var} () {t})\n"
+        var_str = ""
+        for t in self.intel["variables"].keys():
+            for x in sorted(self.intel["variables"][t]):
+                var_str+=var_map(str(t)[5:],x)
+        return var_str
+
+    def _getPPAsserts(self):
+        ass_str = ""
+        for a in self.nodes:
+            ass_str+=f"(assert {a})\n"
+        return ass_str
+
+    def __repr__(self):
+        return f"{self._getPPSMTHeader()}\n{self._getPPVariables()}\n{self._getPPAsserts()}\n{self._getPPSMTFooter()}"
 
 class ExprRef:
     vChildren = []
     vParams = []
     vDecl = None
     vSort = None
-    isVariable = False
+    vKind = Kind.OTHER
 
     # additional data
     intel = None
 
-    def __init__(self,children,params,decl,isVariable,intel=dict()):
+    def __init__(self,children,params,decl,kind,intel=dict()):
         self.vChildren = children
         self.vParams = params
         self.vDecl = decl
-        self.isVariable = isVariable
+        self.vKind = kind
         self.intel = intel
 
     def children(self):
@@ -40,11 +101,14 @@ class ExprRef:
     def sort(self):
         return self.vSort
 
+    def kind(self):
+        return self.vKind
+
     def is_const(self):
-        return not self.isVariable and len(self.vChildren) == 0
+        return not self.is_variable() and len(self.vChildren) == 0
 
     def is_variable(self):
-        return self.isVariable
+        return self.kind() == Kind.VARIABLE
 
     # f : Expr x Value -> Value
     def add_intel_with_function(self,f,neutral=0,key="test"):
@@ -53,13 +117,12 @@ class ExprRef:
         else:
             value = neutral
 
-        self.intel[key] = f(self,neutral)
-
         # aquire values from children
         for c in self.children():
             c.add_intel_with_function(f,neutral,key)
+            neutral = c.get_intel()[key]
 
-        ### BUG WITHIN THE MERGING --- CHECK THIS AGAIN!
+        self.intel[key] = f(self,neutral)
 
 
         # merge the intel
