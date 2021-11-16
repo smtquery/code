@@ -15,6 +15,12 @@ class Kind(Enum):
     HOL_FUNCTION = 6
     OTHER = 7
 
+def _condCopy(c):
+    try:
+        return c.copy()
+    except:
+        return c
+
 class ASTRef:
     nodes = []
     intel = dict()
@@ -23,16 +29,17 @@ class ASTRef:
         self.intel["variables"] = dict()
 
     def add_node(self,expr):
-        expr.add_intel_with_function(self._intel_gatherVariables,self.intel["variables"],"variables")
-        self.intel["variables"] = expr.get_intel()["variables"]
+        expr.add_intel_with_function(self._intel_gatherVariables,self._intel_gatherVariables_merge,dict(),"variables")
+        self.intel["variables"] = self._intel_gatherVariables_merge(self.intel["variables"],expr.get_intel()["variables"])
         self.nodes+=[expr]
 
     # f : Expr x Value -> Value
-    def add_intel_with_function(self,f,neutral=0,key="test"):
+    def add_intel_with_function(self,f,m,neutral=0,key="test"):
+        value = _condCopy(neutral)
         for e in self.nodes:
-            e.add_intel_with_function(f,neutral,key)
-            neutral = e.get_intel()[key]
-        self.intel[key] = neutral
+            e.add_intel_with_function(f,m,_condCopy(neutral),key)
+            value = m(value,e.get_intel()[key])
+        self.intel[key] = value
 
     def apply_function(self,f):
         for e in self.nodes:
@@ -41,16 +48,29 @@ class ASTRef:
     def get_intel(self):
         return self.intel
 
+    def asserts(self):
+        return self.nodes
+
     # intel function for variables
     def _intel_gatherVariables(self,expr,d):
         if expr.is_variable():
-            sort = str(expr.sort())
+            sort = expr.sort()
             decl = str(expr.decl())
             if sort not in d:
                 d[sort] = set()
             if decl not in d[sort]:
                 d[sort].add(decl)
         return d
+
+    def _intel_gatherVariables_merge(self,d1,d2):
+        for k in set(d1.keys()).union(set(d2.keys())):
+            if k in d1 and k in d2:
+                d1[k].update(d2[k])
+            elif k in d2:
+                d1[k] = d2[k]
+            else:
+                pass
+        return d1
 
     ## output
     def _getPPSMTHeader(self):
@@ -75,6 +95,25 @@ class ASTRef:
 
     def __repr__(self):
         return f"{self._getPPSMTHeader()}\n{self._getPPVariables()}\n{self._getPPAsserts()}\n{self._getPPSMTFooter()}"
+
+    def __len__(self):
+        return len(self.nodes)
+
+    def __getitem__(self, ii):
+        return self.nodes[ii]
+
+    def __delitem__(self, ii):
+        del self.nodes[ii]
+
+    def __setitem__(self, ii, val):
+        self.nodes[ii] = val
+
+    def insert(self, ii, val):
+        self.nodes.insert(ii, val)
+
+    def append(self, val):
+        self.insert(len(self.nodes), val)
+
 
 class ExprRef:
     vChildren = []
@@ -114,23 +153,14 @@ class ExprRef:
     def is_variable(self):
         return self.kind() == Kind.VARIABLE
 
-    # f : Expr x Value -> Value
-    def add_intel_with_function(self,f,neutral=0,key="test"):
-        if key in self.intel:
-            value = self.intel[key]
-        else:
-            value = neutral
-
+    # f : Expr x Value -> Value, m : Value x Value -> Value
+    def add_intel_with_function(self,f,m,neutral=0,key="test"):
+        value = _condCopy(neutral)
         # aquire values from children
         for c in self.children():
-            c.add_intel_with_function(f,neutral,key)
-            neutral = c.get_intel()[key]
-
-        self.intel[key] = f(self,neutral)
-
-
-        # merge the intel
-        #self._merge_intel_from_children()
+            c.add_intel_with_function(f,m,_condCopy(neutral),key)
+            value = m(value,c.get_intel()[key])
+        self.intel[key] = f(self,value)
 
     def apply_function(self,f):
         for c in self.children():
@@ -139,26 +169,6 @@ class ExprRef:
 
     def get_intel(self):
         return self.intel
-
-    def _merge_intel_from_children(self):
-        this_intel = self.get_intel()
-        for c in self.children():
-            c._merge_intel_from_children()
-            other_intel = c.get_intel()
-            print(other_intel)
-            this_intel = self._merge_dictionaries(this_intel,other_intel)
-        self.intel = this_intel
-
-    def _merge_dictionaries(self,d1,d2):
-        for k in set(d1.keys()).union(set(d2.keys())):
-            if k in d1 and k in d2:
-                if isinstance(d1[k],int): 
-                    d1[k] = d1[k]+d2[k]
-                else:
-                    d1[k] = self._merge_dictionaries(d1[k],d2[k])
-            elif k in d2:
-                d1[k] = d2[k]
-        return d1
 
     def __repr__(self):
         if self.is_const():

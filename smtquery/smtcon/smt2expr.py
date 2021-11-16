@@ -71,16 +71,16 @@ class Z3SMTtoSExpr(SMTtoSExpr):
             params = expr.params()
 
         if type(expr) == z3.z3.SeqRef:
-            return StringExpr(children,params,str(op),kind)  
+            return StringExpr(children,params,str(op),kind,dict())  
         elif type(expr) == z3.z3.BoolRef:
-            return BoolExpr(children,params,str(op),kind)
+            return BoolExpr(children,params,str(op),kind,dict())
         elif type(expr) == z3.z3.ReRef:
-            return ReExpr(children,params,str(op),kind)
+            return ReExpr(children,params,str(op),kind,dict())
         elif type(expr) == z3.z3.ArithRef:
-            return IntExpr(children,params,str(op),kind)
+            return IntExpr(children,params,str(op),kind,dict())
         elif type(expr) == z3.z3.IntNumRef:
-            return IntExpr(children,params,str(op),kind)
+            return IntExpr(children,params,str(op),kind,dict())
 
 
         # Fall back
-        return ExprRef(children,[],str(op),kind) 
+        return ExprRef(children,[],str(op),kind,dict()) 
