@@ -1,0 +1,17 @@
+solvers:
+  Z3Str3:
+    binary: /usr/bin/z3
+  Z3Seq:
+    binary: /usr/bin/z3
+  CVC4:
+    binary: /usr/bin/cvc4
+
+SMTStore:
+  name: DBFS
+  root: data/smtfiles
+  engine_string: sqlite:///db.sql
+  intels:
+    - Probes
+scheduler:
+  name: multiprocessing
+  cores: 5
