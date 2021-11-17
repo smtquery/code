@@ -2,6 +2,7 @@ from smtquery.config.FileLocator import *
 import yaml
 import smtquery.solvers
 import smtquery.storage.smt
+import smtquery.intel
 import smtquery.scheduling
 import smtquery.scheduling.multi
 import smtquery.scheduling.celerys
@@ -45,9 +46,16 @@ def createStorage (data):
     if data["name"] == "FS":
         storage = smtquery.storage.smt.fs.SMTStorage (data["root"])
     if data["name"] == "DBFS":
+
+        intels = []
+        if "intels" in data:
+            intels = data["intels"]
+        
         storage = smtquery.storage.smt.db.DBFSStorage (data["root"],
-                                                       data["engine_string"]
-                                                              )
+                                                       data["engine_string"],
+                                                       smtquery.intel.makeIntelManager (intels) 
+        )
+
     return storage
 
         
@@ -55,7 +63,6 @@ def createStorage (data):
 def readConfig (conffile):
     global conf
     data = yaml.load (conffile,Loader=yaml.Loader)
-    print (data)
     solverarr = createSolvers (data["solvers"])
     scheduler = createFrontScheduler (data["scheduler"])
     storage = createStorage (data["SMTStore"])

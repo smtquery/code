@@ -3,7 +3,6 @@ import shutil
 import sqlalchemy
 import datetime
 import smtquery.solvers.solver
-import smtquery.storage.smt.plugins
                                  
 class SMTFile:
     def __init__(self,name,filepath,id):
@@ -33,36 +32,39 @@ class SMTFile:
     def getId (self):
         return self._id
 
+    
 class Track:
-    def __init__ (self,name,engine,id,instance_table):
+    def __init__ (self,name,engine,id,instance_table,makesmt):
         self._engine = engine
         self._id = id
         self._name = name
         self._instance_table = instance_table
+        self._makesmt = makesmt
 
     def filesInTrack (self):
         conn = self._engine.connect ()
         res = conn.execute (self._instance_table.select().where (self._instance_table.c.track_id == self._id))
         for row in res.fetchall ():
-            yield SMTFile (row.name,row.path,row.id)
+            yield self._makesmt (row.name,row.path,row.id)
 
     def getName (self):
         return self._name
 
 
 class Benchmark:
-    def __init__ (self,name,engine,id,trackstable,instancetable):
+    def __init__ (self,name,engine,id,trackstable,instancetable,makesmt):
         self._engine = engine
         self._id = id
         self._name = name
         self._tracks_table = trackstable
         self._instancetable = instancetable
+        self._makesmt = makesmt
         
     def tracksInBenchmark (self):
         conn = self._engine.connect ()
         res = conn.execute (self._tracks_table.select().where (self._tracks_table.c.bench_id == self._id))
         for row in res.fetchall ():
-            yield Track (row.name,self._engine,row.id,self._instancetable)
+            yield Track (row.name,self._engine,row.id,self._instancetable,self._makesmt)
     
 
     def getName (self):
@@ -72,7 +74,7 @@ class Benchmark:
 
     
 class DBFSStorage:
-    def __init__ (self,root,enginestring):
+    def __init__ (self,root,enginestring,intels = None):
         self._root = os.path.abspath(root)        
         self._engine = sqlalchemy.create_engine(enginestring)
         
@@ -106,11 +108,12 @@ class DBFSStorage:
                                  sqlalchemy.Column ('model', sqlalchemy.Text),
                                  sqlalchemy.Column ('date', sqlalchemy.DateTime),
                                  )
-        self._plugins = [smtquery.storage.smt.plugins.ProbeSMTFiles ()]
-        for p in self._plugins:
-            if p.needsDB ():
-                p.setupDBTable (self._meta,self._engine)
-            
+        self._intels = intels
+        if intels:
+            self._makesmt = lambda name,filepath,id: self._intels.getIntel (SMTFile(name,filepath,id))
+        else:
+            self._makesmt = SMTFile
+        
     def initialise_db (self):
         self._meta.create_all (self._engine)
 
@@ -141,20 +144,18 @@ class DBFSStorage:
                         track_id = track_id
                     )).inserted_primary_key[0]
                     
-                    for p in self._plugins:
-                        p.processInstance (instancepath,id)
         
     def getBenchmarks (self):
         conn = self._engine.connect ()
         res = conn.execute (self._benchmark_table.select ())
         for row in res.fetchall ():
-            yield Benchmark (row.name,self._engine,row.id,self._tracks_table,self._instance_table)
+            yield Benchmark (row.name,self._engine,row.id,self._tracks_table,self._instance_table,self._makesmt)
         
     def searchFile (self,bench,track,file):
         conn = self._engine.connect ()
         res = conn.execute (self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{file}"))
         for row in res.fetchall ():
-            return SMTFile (row.name,row.path,row.id)
+            return self._makesmt (row.name,row.path,row.id)
         return None
 
     def storeResult (self,result,smtfile,solver):
