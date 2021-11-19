@@ -1,44 +1,3 @@
-import smtquery.smtcon.smt2expr
-import smtquery.qlang.predicates
-import tempfile
-import z3
-
-class Plugin:
-    def __init__(self,name,version):
-        self._name = name
-        self._version = version
-
-    def getName (self):
-        return self._name
-    
-
-    def getVersion (self):
-        return self._version
-
-
-    def getIntel (self, smtfile):
-        return None
-
-    def predicates (self):
-        return {
-
-    }
-    
-
-class Probing(Plugin):
-    def __init__(self):
-        super().__init__ ("Probes","0.0.1")
-        self._smtprobe = smtquery.smtcon.smt2expr.Z3SMTtoSExpr ()
-        
-    def getIntel (self, smtfile):
-        with tempfile.TemporaryDirectory () as tmpdir:
-            filepath = smtfile.copyOutSMTFile (tmpdir)
-            pr = self._smtprobe.getAST (filepath)
-            return pr
-    
-    
-        
-
 
 class ProbeSMTFiles(Plugin):
     hofunc = ["At","str.substr","PrefixOf","SuffixOf","Contains","IndexOf","Replace","IntToStr","StrToInt"]
@@ -89,7 +48,7 @@ class ProbeSMTFiles(Plugin):
                 data = self._mergeData(data,self.traverseAst(x))
         return data
 
-    
+        
     
         
     def needsDB (self):
@@ -97,35 +56,13 @@ class ProbeSMTFiles(Plugin):
     
     def processInstance(self,path):
         instancedata = self.traverseAst(self.getZ3AST(path))
-        dbvalues = {}
+        print (id)
         for k in instancedata.keys():
             if isinstance(instancedata[k],int):
                 dbvalues[k] = instancedata[k]
             elif isinstance(instancedata[k],dict):
                 for kk in instancedata[k].keys():
                     dbvalues[kk] = instancedata[k][kk]
-        return dbvalues
-
-def hasWordEquations (smtfile):
-    if smtfile.OldProbes['weq'] > 0:
-        return smtquery.qlang.predicates.Trool.TT
-    else:
-        return smtquery.qlang.predicates.Trool.FF
+        conn = self._engine.connect ()
+        conn.execute (self._instance_table.insert ().values ([dbvalues]))
     
-class OldProbing(Plugin):
-    def __init__(self):
-        super().__init__ ("OldProbes","0.0.1")
-        self._smtprobe = ProbeSMTFiles ()
-        
-    def getIntel (self, smtfile):
-        with tempfile.TemporaryDirectory () as tmpdir:
-            filepath = smtfile.copyOutSMTFile (tmpdir)
-            pr = self._smtprobe.processInstance (filepath)
-            return pr
-
-
-    
-    def predicates (self):
-        return {
-            "hasWEQ" : hasWordEquations
-        }

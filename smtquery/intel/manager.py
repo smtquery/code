@@ -10,3 +10,9 @@ class Manager:
             setattr(smtfile,s,p.getIntel (smtfile))
             
         return smtfile
+
+    def predicates (self):
+        res = {}
+        for p in self._plugins.values():
+            res.update(p.predicates ())
+        return res

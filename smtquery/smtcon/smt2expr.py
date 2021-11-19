@@ -1,4 +1,6 @@
-from expr import *
+
+
+from smtquery.smtcon.expr import *
 
 class SMTtoSExpr:
     def __init__(self):

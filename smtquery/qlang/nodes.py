@@ -1,5 +1,42 @@
 
+class Visitor:
+    def visitSelect (self,node):
+        pass
 
+    def visitExtract (self,node):
+        pass
+
+    def visitAllInstances (self,node):
+        pass
+
+    def visiPredicate (self,node):
+        pass
+
+    def visitTT (self,node):
+        pass
+
+    def visitFF (self,node):
+        pass
+    
+    def visitAnd (self,node):
+        pass
+
+    def visitOr (self,node):
+        pass
+
+    def visitNot (self,node):
+        pass
+
+    def visitInstanceList (self,node):
+        pass
+    
+    def visitBenchTrackInstances (self,node):
+        pass
+
+    def visitBenchInstances (self,node):
+        pass
+    
+    
 class QNode:
     def __init__(self,children = []):
         self._children = children
@@ -10,11 +47,26 @@ class QNode:
     def __str__(self):
         return ",".join(map (str,self._children))
 
-class SelectNode (QNode):
-    def __init__(self,instances,predicates):
-        print (predicates)
-        super().__init__ ([instances,predicates])
+    def children (self):
+        yield from self._children
 
+class SelectNode (QNode):
+    def __init__(self,attributes,instances,predicates):
+        super().__init__ ([instances,predicates,attributes])
+
+    def getInstance (self):
+        return self._children[0]
+
+    def getPredicate (self):
+        return self._children[1]
+
+    def getAttributes (self):
+        return self._children[2]
+
+    
+    def accept (self,visit):
+        visit.visitSelect (self)
+    
 class ExtractNode (QNode):
     def __init__(self,toextract,instances,predicates):
         super().__init__ ([toextract,instances,predicates])
@@ -26,27 +78,47 @@ class AllInstances(QNode):
     def __str__(self):
         return "AlLInstances"
 
-class hasWEQ(QNode):
-    def __init__(self):
-        super().__init__ ([])
+    def accept (self,visit):
+        visit.visitAllInstances (self)
+    
+class Predicate (QNode):
+    def __init__ (self,name,predfunction):
+        self._name = name
+        self._predfunction = predfunction
 
     def __str__(self):
-        return "hasWEQ"
+        return self._name
 
-class hasRegex(QNode):
-    def __init__(self):
-        super().__init__ ([])
+    def __call__(self,smtfile):
+        return self._predfunction (smtfile)
+
+    def accept (self,visit):
+        visit.visitPredicate (self)
+
+
+class Attribute (QNode):
+    def __init__ (self,name,attrfunction):
+        self._name = name
+        self._attrfunction = attrfunction
 
     def __str__(self):
-        return "hasRegex"
+        return self._name
 
-class isSat(QNode):
-    def __init__(self):
-        super().__init__ ([])
+    def __call__(self,smtfile):
+        return self._attrfunction (smtfile)
 
-    def __str__(self):
-        return "AlLInstances"
+    def accept (self,visit):
+        visit.visitAttribute (self)
 
+class AttributeList(QNode):
+    def __init__(self,liste):
+        super().__init__ (liste)
+
+    def accept (self,visit):
+        visit.visitAttributeList (self)
+
+
+    
 class TT(QNode):
     def __init__(self):
         super().__init__ ([])
@@ -54,6 +126,10 @@ class TT(QNode):
     def __str__(self):
         return "True"
 
+    def accept (self,visit):
+        visit.visitTT (self)
+    
+    
 class FF(QNode):
     def __init__(self):
         super().__init__ ([])
@@ -61,27 +137,41 @@ class FF(QNode):
     def __str__(self):
         return "True"
 
+    def accept (self,visit):
+        visit.visitFF (self)
+    
+    
 class And(QNode):
     def __init__(self,left,right):
         super().__init__ ([left,right])
-
+        
+    def accept (self,visit):
+        visit.visitAnd (self)
+    
    
 
 class Or(QNode):
     def __init__(self,left,right):
         super().__init__ ([left,right])
 
-  
+    def accept (self,visit):
+        visit.visitOr (self)
+
 
 class Not(QNode):
     def __init__(self,left):
         super().__init__ ([left,right])
 
+    def accept (self,visit):
+        visit.visitNot (self)
+
 
 class InstanceList(QNode):
     def __init__(self,liste):
         super().__init__ (liste)
-    
+
+    def accept (self,visit):
+        visit.visitInstanceList (self)
     
 class BenchTrackInstances(QNode):
     def __init__(self,benchmark, track):
@@ -97,7 +187,10 @@ class BenchTrackInstances(QNode):
 
     def __str__(self):
         return f"{self._benchmark}:{self._track}"
-    
+
+    def accept (self,visit):
+        visit.visitBenchTrackInstances (self)
+
         
 class BenchInstances(QNode):
     def __init__(self,benchmark):
@@ -109,4 +202,7 @@ class BenchInstances(QNode):
     
     def __str__(self):
         return f"{self._benchmark}:*"
-    
+
+    def accept (self,visit):
+        visit.visitBenchInstances (self)
+

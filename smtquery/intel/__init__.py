@@ -1,10 +1,12 @@
 from smtquery.intel.plugins import Probing
+from smtquery.intel.plugins import OldProbing
 from smtquery.intel.manager import Manager
 
 
 
 plugins = {
-    "Probes" : Probing
+    "Probes" : Probing,
+    "OldProbes" : OldProbing
 }
 
 def makeIntelManager (pluginnames):

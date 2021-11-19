@@ -3,7 +3,8 @@ import shutil
 import sqlalchemy
 import datetime
 import smtquery.solvers.solver
-                                 
+import hashlib
+
 class SMTFile:
     def __init__(self,name,filepath,id):
         assert (os.path.exists(filepath))
@@ -32,6 +33,8 @@ class SMTFile:
     def getId (self):
         return self._id
 
+    def __str__ (self):
+        return self.SMTString ()
     
 class Track:
     def __init__ (self,name,engine,id,instance_table,makesmt):
@@ -46,7 +49,7 @@ class Track:
         res = conn.execute (self._instance_table.select().where (self._instance_table.c.track_id == self._id))
         for row in res.fetchall ():
             yield self._makesmt (row.name,row.path,row.id)
-
+    
     def getName (self):
         return self._name
 
@@ -65,8 +68,14 @@ class Benchmark:
         res = conn.execute (self._tracks_table.select().where (self._tracks_table.c.bench_id == self._id))
         for row in res.fetchall ():
             yield Track (row.name,self._engine,row.id,self._instancetable,self._makesmt)
-    
-
+            
+    def filesInBenchmark (self):
+        conn = self._engine.connect ()
+        res = conn.execute (self._instancetable.select().where (self._instancetable.c.track_id == self._id))
+        for row in res.fetchall ():
+             t = Track (row.name,self._engine,row.id,self._instancetable,self._makesmt)
+             yield from t.filesInTrack ()
+        
     def getName (self):
         return self._name
 
@@ -134,6 +143,8 @@ class DBFSStorage:
                                                                         bench_id = bench_id)).inserted_primary_key[0]
             
                 for instance in os.listdir (trackpath):
+                    if not instance.endswith (".smt"):
+                        continue
                     instancepath = os.path.join (trackpath,instance)
                     dbvalues = {"name": f"{bench}:{track}:{instance}",
                                 "path": instancepath,
@@ -150,7 +161,7 @@ class DBFSStorage:
         res = conn.execute (self._benchmark_table.select ())
         for row in res.fetchall ():
             yield Benchmark (row.name,self._engine,row.id,self._tracks_table,self._instance_table,self._makesmt)
-        
+    
     def searchFile (self,bench,track,file):
         conn = self._engine.connect ()
         res = conn.execute (self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{file}"))
@@ -158,6 +169,13 @@ class DBFSStorage:
             return self._makesmt (row.name,row.path,row.id)
         return None
 
+    def allFiles (self):
+        conn = self._engine.connect ()
+        res = conn.execute (self._instance_table.select ())
+        for row in res.fetchall ():
+            yield self._makesmt (row.name,row.path,row.id)
+        
+    
     def storeResult (self,result,smtfile,solver):
         conn = self._engine.connect ()
         query = self._result_table.insert().values (
@@ -172,3 +190,13 @@ class DBFSStorage:
         
         conn.execute (query)
         
+
+    def storagePredicates (self):
+        return self._intels.predicates ()
+
+    def storageAttributes (self):
+        return {
+            "Name" : lambda smtfile: smtfile.getName (),
+            "Hash" : lambda smtfile: smtfile.hashContent (),
+            "Content" : lambda smtfile: smtfile.SMTString (),            
+        }

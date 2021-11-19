@@ -12,6 +12,7 @@ SMTStore:
   engine_string: sqlite:///db.sql
   intels:
     - Probes
+    - OldProbes
 scheduler:
   name: multiprocessing
   cores: 5
