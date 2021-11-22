@@ -99,6 +99,10 @@ class ASTRef:
     def __len__(self):
         return len(self.nodes)
 
+    def __getattr__(self,name):
+        from functools import partial
+        return partial(getattr(ASTRef, name),self)
+
     def __getitem__(self, ii):
         return self.nodes[ii]
 
