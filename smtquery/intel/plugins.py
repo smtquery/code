@@ -42,20 +42,18 @@ class Probing(Plugin):
             pr.add_intel_with_function(smtquery.smtcon.exprfun.HasAtom().apply,smtquery.smtcon.exprfun.HasAtom().merge,dict(),"has")
             return pr
 
-def hasKind(kind,smtfile):
-    if smtfile.Probes.get_intel()["has"][kind] > 0:
-        return smtquery.qlang.predicates.Trool.TT
-    else:
-        return smtquery.qlang.predicates.Trool.FF 
-
-
-    
     def predicates (self):
         return {
             "hasWEQ" : partial(hasKind,Kind.WEQ),
             "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
             "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT)
         }
+
+def hasKind(kind,smtfile):
+    if kind in smtfile.Probes.get_intel()["has"]:
+        return smtquery.qlang.predicates.Trool.TT
+    else:
+        return smtquery.qlang.predicates.Trool.FF 
 
 ###### OLD STUFF!
 class ProbeSMTFiles(Plugin):
