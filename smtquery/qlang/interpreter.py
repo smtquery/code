@@ -32,8 +32,8 @@ class InstanceSelector:
         for bb in storage.getBenchmarks ():
             if node.getBenchmark ().replace(":","") == bb.getName ():
                 for track in bb.tracksInBenchmark ():
-                    
-                    self._res = track.filesInTrack ()
+                    if track.getName () == f"{node.getBenchmark()}:{node.getTrack()}":
+                        self._res = track.filesInTrack ()
                 
         
     def visitBenchInstances (self,node):

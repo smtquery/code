@@ -4,6 +4,8 @@ import sqlalchemy
 import datetime
 import smtquery.solvers.solver
 import hashlib
+import smtquery.config
+    
 
 class SMTFile:
     def __init__(self,name,filepath,id):
@@ -12,6 +14,8 @@ class SMTFile:
         self._filepath = filepath
         self._id = id
         
+    def __reduce__ (self):
+        return SMTFile,(self._name,self._filepath,self._id)
         
     def SMTString (self):
         with open(self._filepath,'r') as ff:
