@@ -1,7 +1,10 @@
 import smtquery.smtcon.smt2expr
+import smtquery.smtcon.exprfun
+from smtquery.smtcon.expr import Kind
 import smtquery.qlang.predicates
 import tempfile
 import z3
+from functools import partial
 
 class Plugin:
     def __init__(self,name,version):
@@ -34,12 +37,43 @@ class Probing(Plugin):
         with tempfile.TemporaryDirectory () as tmpdir:
             filepath = smtfile.copyOutSMTFile (tmpdir)
             pr = self._smtprobe.getAST (filepath)
+
+            # demo
+            pr.add_intel_with_function(smtquery.smtcon.exprfun.HasAtom().apply,smtquery.smtcon.exprfun.HasAtom().merge,dict(),"has")
+
+            # plot test
+            if True:
+                import graphviz 
+                dot = graphviz.Digraph('G', format='pdf')
+                pr.add_intel_with_function(smtquery.smtcon.exprfun.Plot().apply,smtquery.smtcon.exprfun.Plot().merge,{"dot" : dot, "succ" : [], "colours" : dict()},"plot")
+                dot.render(smtfile.getName().replace(":","_"),cleanup=True)
+
+            # path
+            pr.add_intel_with_function(smtquery.smtcon.exprfun.VariableCount().apply,smtquery.smtcon.exprfun.VariableCount().merge,dict(),"#variables")
+            pr.add_intel_with_function(smtquery.smtcon.exprfun.VariableCountPath().apply,smtquery.smtcon.exprfun.VariableCountPath().merge,[],"pathVars")
+
+            print("paths")
+            for x in pr.get_intel()["pathVars"]:
+                print(x)
+            print("all")
+            print(pr.get_intel()["#variables"])
+
             return pr
-    
-    
-        
 
+    def predicates (self):
+        return {
+            "hasWEQ" : partial(hasKind,Kind.WEQ),
+            "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
+            "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT)
+        }
 
+def hasKind(kind,smtfile):
+    if kind in smtfile.Probes.get_intel()["has"]:
+        return smtquery.qlang.predicates.Trool.TT
+    else:
+        return smtquery.qlang.predicates.Trool.FF 
+
+###### OLD STUFF!
 class ProbeSMTFiles(Plugin):
     hofunc = ["At","str.substr","PrefixOf","SuffixOf","Contains","IndexOf","Replace","IntToStr","StrToInt"]
     def __init__(self):
@@ -106,11 +140,14 @@ class ProbeSMTFiles(Plugin):
                     dbvalues[kk] = instancedata[k][kk]
         return dbvalues
 
+
 def hasWordEquations (smtfile):
-    if smtfile.OldProbes['weq'] > 0:
+    if smtfile.Probes.get_intel()["has"][Kind.WEQ] > 0:
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
+
+
     
 class OldProbing(Plugin):
     def __init__(self):
@@ -122,10 +159,3 @@ class OldProbing(Plugin):
             filepath = smtfile.copyOutSMTFile (tmpdir)
             pr = self._smtprobe.processInstance (filepath)
             return pr
-
-
-    
-    def predicates (self):
-        return {
-            "hasWEQ" : hasWordEquations
-        }

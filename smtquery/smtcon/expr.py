@@ -30,7 +30,7 @@ class ASTRef:
 
     def add_node(self,expr):
         expr.add_intel_with_function(self._intel_gatherVariables,self._intel_gatherVariables_merge,dict(),"variables")
-        self.intel["variables"] = self._intel_gatherVariables_merge(self.intel["variables"],expr.get_intel()["variables"])
+        self.intel["variables"] = self._intel_gatherVariables_merge(self,self.intel["variables"],expr.get_intel()["variables"])
         self.nodes+=[expr]
 
     # f : Expr x Value -> Value
@@ -38,8 +38,11 @@ class ASTRef:
         value = _condCopy(neutral)
         for e in self.nodes:
             e.add_intel_with_function(f,m,_condCopy(neutral),key)
-            value = m(value,e.get_intel()[key])
+            value = m(self,value,e.get_intel()[key]) # watch out child passed
         self.intel[key] = value
+
+    def id(self):
+        return 0
 
     def apply_function(self,f):
         for e in self.nodes:
@@ -62,7 +65,7 @@ class ASTRef:
                 d[sort].add(decl)
         return d
 
-    def _intel_gatherVariables_merge(self,d1,d2):
+    def _intel_gatherVariables_merge(self,expr,d1,d2):
         for k in set(d1.keys()).union(set(d2.keys())):
             if k in d1 and k in d2:
                 d1[k].update(d2[k])
@@ -99,6 +102,10 @@ class ASTRef:
     def __len__(self):
         return len(self.nodes)
 
+    def __getattr__(self,name):
+        from functools import partial
+        return partial(getattr(ASTRef, name),self)
+
     def __getitem__(self, ii):
         return self.nodes[ii]
 
@@ -121,16 +128,18 @@ class ExprRef:
     vDecl = None
     vSort = None
     vKind = Kind.OTHER
+    vId = None
 
     # additional data
     intel = None
 
-    def __init__(self,children,params,decl,kind,intel=dict()):
+    def __init__(self,children,params,decl,kind,intel,node_id):
         self.vChildren = children
         self.vParams = params
         self.vDecl = decl
         self.vKind = kind
         self.intel = intel
+        self.vId = node_id
 
     def children(self):
         return self.vChildren
@@ -147,6 +156,9 @@ class ExprRef:
     def kind(self):
         return self.vKind
 
+    def id(self):
+        return self.vId
+
     def is_const(self):
         return not self.is_variable() and len(self.vChildren) == 0
 
@@ -159,7 +171,7 @@ class ExprRef:
         # aquire values from children
         for c in self.children():
             c.add_intel_with_function(f,m,_condCopy(neutral),key)
-            value = m(value,c.get_intel()[key])
+            value = m(self,value,c.get_intel()[key])
         self.intel[key] = f(self,value)
 
     def apply_function(self,f):
