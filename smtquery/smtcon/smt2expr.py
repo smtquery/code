@@ -29,9 +29,10 @@ class Z3SMTtoSExpr(SMTtoSExpr):
     def getAST(self,file_path):
         z3ast = self.getZ3AST(file_path)
         ast = ASTRef()
+        node_id = [0] # list to pass it as reference
         if type(z3ast) in [z3.z3.AstVector]:
             for e in z3ast:
-                ast.add_node(self.translateExpr(e))
+                ast.add_node(self.translateExpr(e,node_id))
         return ast
 
     def _extractOpName(self,op):
@@ -58,9 +59,10 @@ class Z3SMTtoSExpr(SMTtoSExpr):
             return Kind.OTHER
 
 
-    def translateExpr(self,expr):
+    def translateExpr(self,expr,node_id_ref):
         sort = self.getSort(expr.sort())
-        children = [self.translateExpr(c) for c in expr.children()]
+        children = [self.translateExpr(c,node_id_ref) for c in expr.children()]
+        node_id_ref[0] = node_id_ref[0]+1
         is_variable = z3.is_const(expr) and expr.decl().kind() == z3.Z3_OP_UNINTERPRETED
         is_const = not is_variable and len(children) == 0
         op = self._extractOpName(expr.decl())
@@ -72,16 +74,16 @@ class Z3SMTtoSExpr(SMTtoSExpr):
             params = expr.params()
 
         if type(expr) == z3.z3.SeqRef:
-            return StringExpr(children,params,str(op),kind,dict())  
+            return StringExpr(children,params,str(op),kind,dict(),node_id_ref[0])  
         elif type(expr) == z3.z3.BoolRef:
-            return BoolExpr(children,params,str(op),kind,dict())
+            return BoolExpr(children,params,str(op),kind,dict(),node_id_ref[0])
         elif type(expr) == z3.z3.ReRef:
-            return ReExpr(children,params,str(op),kind,dict())
+            return ReExpr(children,params,str(op),kind,dict(),node_id_ref[0])
         elif type(expr) == z3.z3.ArithRef:
-            return IntExpr(children,params,str(op),kind,dict())
+            return IntExpr(children,params,str(op),kind,dict(),node_id_ref[0])
         elif type(expr) == z3.z3.IntNumRef:
-            return IntExpr(children,params,str(op),kind,dict())
+            return IntExpr(children,params,str(op),kind,dict(),node_id_ref[0])
 
 
         # Fall back
-        return ExprRef(children,[],str(op),kind,dict()) 
+        return ExprRef(children,[],str(op),kind,dict(),node_id_ref[0]) 

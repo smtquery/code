@@ -40,6 +40,13 @@ class Probing(Plugin):
 
             # demo
             pr.add_intel_with_function(smtquery.smtcon.exprfun.HasAtom().apply,smtquery.smtcon.exprfun.HasAtom().merge,dict(),"has")
+
+            # plot test
+            import graphviz 
+            dot = graphviz.Digraph('G', format='pdf')
+            pr.add_intel_with_function(smtquery.smtcon.exprfun.Plot().apply,smtquery.smtcon.exprfun.Plot().merge,{"dot" : dot, "succ" : [], "colours" : dict()},"plot")
+            dot.render("test")
+
             return pr
 
     def predicates (self):
