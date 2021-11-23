@@ -42,10 +42,21 @@ class Probing(Plugin):
             pr.add_intel_with_function(smtquery.smtcon.exprfun.HasAtom().apply,smtquery.smtcon.exprfun.HasAtom().merge,dict(),"has")
 
             # plot test
-            import graphviz 
-            dot = graphviz.Digraph('G', format='pdf')
-            pr.add_intel_with_function(smtquery.smtcon.exprfun.Plot().apply,smtquery.smtcon.exprfun.Plot().merge,{"dot" : dot, "succ" : [], "colours" : dict()},"plot")
-            dot.render("test")
+            if True:
+                import graphviz 
+                dot = graphviz.Digraph('G', format='pdf')
+                pr.add_intel_with_function(smtquery.smtcon.exprfun.Plot().apply,smtquery.smtcon.exprfun.Plot().merge,{"dot" : dot, "succ" : [], "colours" : dict()},"plot")
+                dot.render(smtfile.getName().replace(":","_"),cleanup=True)
+
+            # path
+            pr.add_intel_with_function(smtquery.smtcon.exprfun.VariableCount().apply,smtquery.smtcon.exprfun.VariableCount().merge,dict(),"#variables")
+            pr.add_intel_with_function(smtquery.smtcon.exprfun.VariableCountPath().apply,smtquery.smtcon.exprfun.VariableCountPath().merge,[],"pathVars")
+
+            print("paths")
+            for x in pr.get_intel()["pathVars"]:
+                print(x)
+            print("all")
+            print(pr.get_intel()["#variables"])
 
             return pr
 

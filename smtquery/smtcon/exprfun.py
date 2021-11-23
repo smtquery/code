@@ -1,3 +1,5 @@
+from smtquery.smtcon.expr import *
+
 class ExprFun:
     def __init__(self,name,version):
         self._name = name
@@ -50,10 +52,62 @@ class VariableCount(ExprFun):
                 if isinstance(d1[k],int): 
                     d1[k] = d1[k]+d2[k]
                 else:
-                    d1[k] = merge_f(d1[k],d2[k],expr)
+                    d1[k] = self.merge(expr,d1[k],d2[k])
             elif k in d2:
                 d1[k] = d2[k]
         return d1
+
+class VariableCountPath(ExprFun):
+    def __init__(self):
+        super().__init__ ("VariablePath","0.0.1")
+    
+    # data = [dict(),...]
+    def apply (self, expr, data):
+        if expr.is_variable():
+            sort = expr.sort()
+            decl = str(expr.decl())
+            if len(data) == 0:
+                data+=[dict()]
+            for d in data:
+                if sort not in d:
+                    d[sort] = dict()
+                if decl not in d[sort]:
+                    d[sort][decl] = 0
+                d[sort][decl]+=1
+        return data
+
+    def merge(self,expr,data1,data2):
+        ### branching for ite is missing!
+        # we have to merge the first child with the second AND the third
+        # but this function is called independently for each child
+
+        if isinstance(expr,ExprRef) and expr.decl() == "or":
+            return data1.copy()+data2.copy()
+
+        data = []
+        if len(data1) == 0:
+            return data2
+        elif len(data2) == 0:
+            return data1
+        for d1 in data1:
+            for d2 in data2:
+                data+=[self._mergeDicts(d1,d2)]
+        return data
+
+    def _mergeDicts(self,d1,d2):
+        r_data = dict()        
+        for k in set(d1.keys()).union(set(d2.keys())):
+            if k in d1 and k in d2:
+                if isinstance(d1[k],int): 
+                    r_data[k] = d1[k]+d2[k]
+                else:
+                    r_data[k] = self._mergeDicts(d1[k],d2[k])
+            elif k in d2:
+                r_data[k] = d2[k] if isinstance(d2[k],int) else d2[k].copy()
+            elif k in d1: 
+                r_data[k] = d1[k] if isinstance(d1[k],int) else d1[k].copy()
+        return r_data
+
 
 class Plot(ExprFun):
     def __init__(self):
