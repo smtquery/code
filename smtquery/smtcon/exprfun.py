@@ -23,13 +23,15 @@ class HasAtom(ExprFun):
         data[expr.kind()]+=1
         return data
 
-    def merge(self, expr, d1,d2):
-        for k in set(d1.keys()).union(set(d2.keys())):
-            if k in d1 and k in d2:
-                d1[k] = d1[k]+d2[k]
-            elif k in d2:
-                d1[k] = d2[k]
-        return d1
+    def merge(self, expr, data):
+        d_new = dict()
+        for d in data:
+            for k in set(d_new.keys()).union(set(d.keys())):
+                if k in d_new and k in d:
+                    d_new[k]=+d[k]
+                elif k in d:
+                    d_new[k] = d[k]
+        return d_new
 
 class VariableCount(ExprFun):
     def __init__(self):
@@ -46,16 +48,19 @@ class VariableCount(ExprFun):
             data[sort][decl]+=1
         return data
 
-    def merge(self,expr,d1,d2):
-        for k in set(d1.keys()).union(set(d2.keys())):
-            if k in d1 and k in d2:
-                if isinstance(d1[k],int): 
-                    d1[k] = d1[k]+d2[k]
-                else:
-                    d1[k] = self.merge(expr,d1[k],d2[k])
-            elif k in d2:
-                d1[k] = d2[k]
-        return d1
+    def merge(self,expr,data):
+        d_new = dict()
+        for d in data:
+            for t in set(d_new.keys()).union(set(d.keys())):
+                if t not in d_new.keys():
+                    d_new[t] = d[t]
+                elif t in d.keys():
+                    for v in set(d_new[t].keys()).union(set(d[t].keys())):
+                        if v not in d_new[t]:
+                            d_new[t][v] = 0
+                        if v in d_new[t] and v in d[t]:
+                            d_new[t][v]+=d[t][v]
+        return d_new
 
 class VariableCountPath(ExprFun):
     def __init__(self):
@@ -76,15 +81,41 @@ class VariableCountPath(ExprFun):
                 d[sort][decl]+=1
         return data
 
-    def merge(self,expr,data1,data2):
+    def merge(self,expr,data):
         ### branching for ite is missing!
         # we have to merge the first child with the second AND the third
         # but this function is called independently for each child
+        if isinstance(expr,ExprRef) and expr.decl() == "ite":
+            assert(len(data) == 3)
+            d_cond = data.pop(0)
+            d_ret = []
+            for stmt in data:
+                for dd in stmt:
+                    for d in d_cond:
+                        d_ret+=[self._mergeDicts(d,dd)]
+            return d_ret
 
         if isinstance(expr,ExprRef) and expr.decl() == "or":
-            return data1.copy()+data2.copy()
+            return [d for path in data for d in path]
 
-        data = []
+        d_ret = data.pop(0) if len(data) > 0 else dict()
+        while len(data) > 0:
+            d_tmp = []
+            d_n = data.pop(0)
+            if len(d_ret) == 0:
+                d_tmp = d_n
+            elif len(d_n) == 0:
+                d_tmp = d_ret
+            else:
+                for d in d_ret:
+                    for dd in d_n:
+                        d_tmp+=[self._mergeDicts(d,dd)]
+            d_ret = d_tmp
+        return d_ret
+
+
+
+        """data = []
         if len(data1) == 0:
             return data2
         elif len(data2) == 0:
@@ -93,7 +124,7 @@ class VariableCountPath(ExprFun):
             for d2 in data2:
                 data+=[self._mergeDicts(d1,d2)]
         return data
-
+        """
     def _mergeDicts(self,d1,d2):
         r_data = dict()        
         for k in set(d1.keys()).union(set(d2.keys())):
@@ -124,11 +155,17 @@ class Plot(ExprFun):
         data["succ"]=[expr.id()]
         return data
 
-    def merge(self,expr,d1,d2):
-        if expr.id() != d2['succ'][0] and expr.id() != 0: # skip root node
-            d1["dot"].edge(f"{expr.id()}", f"{d2['succ'][0]}",penwidth="0.5",arrowhead="none")  
-        d1["succ"] = []
-        return d1
+    def merge(self,expr,data):
+        d_new = dict()
+        for d in data:
+            if len(d_new) == 0:
+                d_new["dot"] = d["dot"]
+                d_new["succ"] = []
+                d_new["colours"] = d["colours"]
+
+            if len(d['succ']) > 0 and expr.id() != d['succ'][0] and expr.id() != 0: # skip root node
+                d_new["dot"].edge(f"{expr.id()}", f"{d['succ'][0]}",penwidth="0.5",arrowhead="none")  
+        return d_new
 
     # auxilary functions
     def _colourGen(self):

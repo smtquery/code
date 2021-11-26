@@ -27,22 +27,28 @@ class ASTRef:
 
     def __init__(self):
         self.intel["variables"] = dict()
+        self.nodes = []
 
     def add_node(self,expr):
         expr.add_intel_with_function(self._intel_gatherVariables,self._intel_gatherVariables_merge,dict(),"variables")
-        self.intel["variables"] = self._intel_gatherVariables_merge(self,self.intel["variables"],expr.get_intel()["variables"])
+        self.intel["variables"] = self._intel_gatherVariables_merge(self,[self.intel["variables"]]+[expr.get_intel()["variables"]])
         self.nodes+=[expr]
 
     # f : Expr x Value -> Value
     def add_intel_with_function(self,f,m,neutral=0,key="test"):
-        value = _condCopy(neutral)
+        values = []
+
+        # aquire values from node
         for e in self.nodes:
             e.add_intel_with_function(f,m,_condCopy(neutral),key)
-            value = m(self,value,e.get_intel()[key]) # watch out child passed
-        self.intel[key] = value
+            values+=[e.get_intel()[key]]
+        self.intel[key] = f(e,m(self,values))
 
     def id(self):
         return 0
+
+    def kind(self):
+        return None
 
     def apply_function(self,f):
         for e in self.nodes:
@@ -65,15 +71,17 @@ class ASTRef:
                 d[sort].add(decl)
         return d
 
-    def _intel_gatherVariables_merge(self,expr,d1,d2):
-        for k in set(d1.keys()).union(set(d2.keys())):
-            if k in d1 and k in d2:
-                d1[k].update(d2[k])
-            elif k in d2:
-                d1[k] = d2[k]
-            else:
-                pass
-        return d1
+    def _intel_gatherVariables_merge(self,expr,data):
+        d_new = dict()
+        for d in data:
+            for k in set(d_new.keys()).union(set(d.keys())):
+                if k in d_new and k in d:
+                    d_new[k].update(d[k])
+                elif k in d:
+                    d_new[k] = d[k]
+                else:
+                    pass
+        return d_new
 
     ## output
     def _getPPSMTHeader(self):
@@ -165,14 +173,14 @@ class ExprRef:
     def is_variable(self):
         return self.kind() == Kind.VARIABLE
 
-    # f : Expr x Value -> Value, m : Value x Value -> Value
+    # f : Expr, Value -> Value, m : Expr x [Value] -> Value
     def add_intel_with_function(self,f,m,neutral=0,key="test"):
-        value = _condCopy(neutral)
+        values = [_condCopy(neutral)] if len(self.children()) == 0 else []
         # aquire values from children
         for c in self.children():
             c.add_intel_with_function(f,m,_condCopy(neutral),key)
-            value = m(self,value,c.get_intel()[key])
-        self.intel[key] = f(self,value)
+            values+=[c.get_intel()[key]]
+        self.intel[key] = f(self,m(self,values))
 
     def apply_function(self,f):
         for c in self.children():

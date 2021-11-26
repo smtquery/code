@@ -4,6 +4,7 @@ from smtquery.smtcon.expr import Kind
 import smtquery.qlang.predicates
 import tempfile
 import z3
+import graphviz 
 from functools import partial
 
 class Plugin:
@@ -37,26 +38,21 @@ class Probing(Plugin):
         with tempfile.TemporaryDirectory () as tmpdir:
             filepath = smtfile.copyOutSMTFile (tmpdir)
             pr = self._smtprobe.getAST (filepath)
-
+           
             # demo
             pr.add_intel_with_function(smtquery.smtcon.exprfun.HasAtom().apply,smtquery.smtcon.exprfun.HasAtom().merge,dict(),"has")
 
             # plot test
             if True:
-                import graphviz 
                 dot = graphviz.Digraph('G', format='pdf')
                 pr.add_intel_with_function(smtquery.smtcon.exprfun.Plot().apply,smtquery.smtcon.exprfun.Plot().merge,{"dot" : dot, "succ" : [], "colours" : dict()},"plot")
                 dot.render(smtfile.getName().replace(":","_"),cleanup=True)
-
             # path
             pr.add_intel_with_function(smtquery.smtcon.exprfun.VariableCount().apply,smtquery.smtcon.exprfun.VariableCount().merge,dict(),"#variables")
             pr.add_intel_with_function(smtquery.smtcon.exprfun.VariableCountPath().apply,smtquery.smtcon.exprfun.VariableCountPath().merge,[],"pathVars")
-
-            print("paths")
-            for x in pr.get_intel()["pathVars"]:
-                print(x)
-            print("all")
-            print(pr.get_intel()["#variables"])
+            
+            for i,p in enumerate(pr.get_intel()["pathVars"]):
+                print(i,p)
 
             return pr
 
