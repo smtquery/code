@@ -4,7 +4,6 @@ import argparse
 import smtquery.config
 import smtquery.storage.smt.fs
 import smtquery.scheduling
-import smtquery.qlang.predicates
 
 
 parser = argparse.ArgumentParser()
@@ -28,8 +27,7 @@ schedule = smtquery.config.conf.getScheduler ()
 file = storage.searchFile (args.benchmark,args.track,args.smtfile)
 
 if file:
-    print (smtquery.qlang.predicates.hasWordEquations (file))
-    res = schedule.runSolver (solver,file,None)#solver.runSolver (file)
+    res = schedule.runSolver (solver,file,None)
     res.wait ()
     print (schedule.interpretSolverRes (res))
     
