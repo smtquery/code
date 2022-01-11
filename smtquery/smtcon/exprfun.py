@@ -1,3 +1,6 @@
+import hashlib
+import math
+
 from smtquery.smtcon.expr import *
 
 class ExprFun:
@@ -12,6 +15,108 @@ class ExprFun:
         return None
     def merge(self, expr, data1, data2):
         return None
+
+
+class AssertTrue(ExprFun):
+    def __init__(self):
+        super().__init__('AssertTrue', '0.0.1')
+
+    def apply(self, expr, data):
+        if isinstance(expr, BoolExpr) and ['true'] in [x.params() for x in expr.children()]:
+            data += 1
+        return data
+
+    def merge(self, expr, data):
+        return sum(data)
+
+
+class TerminalLengths(ExprFun):
+    def __init__(self):
+        super().__init__('TerminalLengths', '0.0.1')
+
+    def apply(self, expr, data):
+        print(expr)
+        if expr.is_const() and expr.sort() == Sort.String:
+            l = len(expr.params()[0])-2
+            data += [l]
+        return data
+
+    def merge(self, expr, data):
+        d_new = []
+        for d in data:
+            d_new += d
+        return d_new
+
+class HashConstraints(ExprFun):
+    def __init__(self):
+        super().__init__('HashConstraints', '0.0.1')
+
+    def apply(self, expr, data):
+        if expr.kind() != Kind.CONSTANT and expr.kind() != Kind.VARIABLE:
+            h = hashlib.md5(repr(expr).encode('utf-8')).hexdigest()
+            print(expr, h)
+            if h not in data:
+                data[h] = 0
+            data[h] += 1
+        return data
+
+    def merge(self, expr, data):
+        d_new = dict()
+        for d in data:
+            for k, v in d.items():
+                if k not in d_new:
+                    d_new[k] = 0
+                d_new[k] += v
+
+        return d_new
+
+class Bounded(ExprFun):
+    def __init__(self):
+        super().__init__('Bounded', '0.0.1')
+
+    def apply(self, expr, data):
+        # TODO !=
+        if expr.kind() == Kind.WEQ:
+            v, c = None, None
+            for e in expr.children():
+                if e.is_variable():
+                    v = str(e)
+                elif e.is_const():
+                    c = len(str(e))-2
+            if v and c:
+                data.update({v: (c, c)})
+        elif expr.kind() == Kind.LENGTH_CONSTRAINT:
+            v, c = None, None
+            for e in expr.children():
+                if e.is_const():
+                    c = int(str(e))
+                elif e.kind() == Kind.OTHER:
+                    v = str(e.children()[0])
+            if v and c:
+                if expr.decl() == '<':
+                    data.update({v: (0, c-1)})
+                elif expr.decl() == '>':
+                    data.update({v: (c+1, float('inf'))})
+                elif expr.decl() == '<=':
+                    data.update({v: (0, c)})
+                elif expr.decl() == '>=':
+                    data.update({v: (c, float('inf'))})
+                elif expr.decl() == '=':
+                    data.update({v: (c, c)})
+        return data
+
+    def merge(self, expr, data):
+        # TODO: merge constraints on equal variables
+        d_new = dict()
+        for d in data:
+            for k in set(d_new.keys()).union(set(d.keys())):
+                if k in d_new and k in d:
+                    # merge
+                    d_new[k] = (max(d_new[k][0], d[k][0]), min(d_new[k][1], d[k][1]))
+                elif k in d:
+                    d_new[k] = d[k]
+        return d_new
+
 
 class HasAtom(ExprFun):
     def __init__(self):
@@ -28,7 +133,7 @@ class HasAtom(ExprFun):
         for d in data:
             for k in set(d_new.keys()).union(set(d.keys())):
                 if k in d_new and k in d:
-                    d_new[k]=+d[k]
+                    d_new[k]+=d[k]
                 elif k in d:
                     d_new[k] = d[k]
         return d_new
