@@ -123,7 +123,7 @@ class DBFSStorage:
                                  sqlalchemy.Column ('model', sqlalchemy.Text),
                                  sqlalchemy.Column ('date', sqlalchemy.DateTime),
                                  )
-        self._makesmt = lambda name,filepath,id: smtquery.intel.manager.getIntel (SMTFile(name,filepath,id))
+        self._makesmt = lambda name,filepath,id: smtquery.intel.intels.getIntel (SMTFile(name,filepath,id))
 
         
     def initialise_db (self):
@@ -200,7 +200,7 @@ class DBFSStorage:
         
 
     def storagePredicates (self):
-        return smtquery.intel.manager.predicates ()
+        return smtquery.intel.intels.predicates ()
 
     def storageAttributes (self):
         return {

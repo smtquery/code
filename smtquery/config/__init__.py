@@ -50,11 +50,11 @@ def createStorage (data):
         intels = []
         if "intels" in data:
             intels = data["intels"]
-        
+            
         storage = smtquery.storage.smt.db.DBFSStorage (data["root"],
-                                                       data["engine_string"],
-                                                       smtquery.intel.makeIntelManager (intels) 
+                                                       data["engine_string"]
         )
+        smtquery.intel.makeIntelManager (intels) 
 
     return storage
 

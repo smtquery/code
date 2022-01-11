@@ -17,6 +17,7 @@ class Proxy:
     
 class Manager:
     def __init__(self,plugins = None):
+        print ("New Manager")
         self._plugins = plugins or {}
 
     def addPlugin (self,p):
@@ -25,11 +26,12 @@ class Manager:
     def getIntel (self,smtfile):
         for s,p in self._plugins.items():
             setattr(smtfile,s,Proxy(p.getIntel,[smtfile]))
-        
+            
         return smtfile
 
     def predicates (self):
         res = {}
         for p in self._plugins.values():
             res.update(p.predicates ())
+        
         return res
