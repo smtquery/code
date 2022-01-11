@@ -1,4 +1,0 @@
-SMTStore:
-  name: DBFS
-  root: data/smtfiles
-  engine_string: sqlite:///db.sql
