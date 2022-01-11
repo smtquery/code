@@ -1,6 +1,10 @@
 import smtquery.qlang.parser
 import smtquery.qlang.interpreter
 import smtquery.qlang.predicates
+import smtquery.intel
+import smtquery.extract
+import smtquery.apply
+import smtquery.ui
 
 def getName ():
     return "qlang"
@@ -13,17 +17,24 @@ def run (arguments):
     query = input (">")
 
     predicates  = {}
-
-    for i,v in smtquery.config.conf.getStorage ().storagePredicates ().items():
-        predicates[i] = v
-
+    
+    predicates.update(smtquery.intel.manager.predicates ().items())
+    
     for name in smtquery.config.conf.getSolvers ().keys():
         predicates[f"isSAT({name})"] = smtquery.qlang.predicates.makeSatPredicate (name)
-        
-    parser = smtquery.qlang.parser.Parser (predicates,smtquery.config.conf.getStorage ().storageAttributes ())
 
+        
+    extract = smtquery.extract.extractors
+    applyf = smtquery.apply.applys 
+    
+        
+    parser = smtquery.qlang.parser.Parser (predicates,smtquery.config.conf.getStorage ().storageAttributes (),extract,applyf)
+    
         
     node = parser.parse (query)
 
+
+               
+               
 
     interpreter.Run (node,print)

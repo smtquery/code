@@ -1,18 +1,16 @@
-from smtquery.intel.plugins import Probing
-from smtquery.intel.plugins import OldProbing
 from smtquery.intel.manager import Manager
+from smtquery.intel.plugins import plugins
+manager = Manager ()
 
 
 
-plugins = {
-    "Probes" : Probing,
-    "OldProbes" : OldProbing
-}
 
-def makeIntelManager (pluginnames):
+
+def makeIntelManager (pluginnames): 
+    global manager
     manager = Manager ()
     for p in pluginnames:
-        if p in  plugins:
+        if p in plugins:
             manager.addPlugin (plugins[p] ())
         else:
             raise f"No plugin named {p}"

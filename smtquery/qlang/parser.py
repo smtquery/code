@@ -7,10 +7,17 @@ def createSelect (s,l,toks):
     return smtquery.qlang.nodes.SelectNode (toks[1],toks[3],toks[5])
 
 def createExtract (s,l,toks):
-    return smtquery.qlang.nodesExtractNode (toks[1],toks[3],toks[5])
+    return smtquery.qlang.nodes.ExtractNode (toks[1],toks[3],toks[5],toks[7])
 
 def makePredicate (name,pred,s,l,toks):
     return smtquery.qlang.nodes.Predicate(name,pred)
+
+def makeExtract (name,pred,s,l,toks):
+    return smtquery.qlang.nodes.ExtractFunc(name,pred)
+
+def makeApply (name,pred,s,l,toks):
+    return smtquery.qlang.nodes.Apply(name,pred)
+
 
 def makeAttribute (name,attribute,s,l,toks):
     return smtquery.qlang.nodes.Attribute(name,attribute)
@@ -19,7 +26,9 @@ def makeAttribute (name,attribute,s,l,toks):
 
 
 class Parser:
-    def __init__(self,predicates = {}, attributes = {}):
+    def __init__(self,predicates = {}, attributes = {},
+                 extractfunc = {}, applyfunc = {}
+                 ):
         SELECT = pp.Literal ("Select")
         FROM = pp.Literal ("From")
         WHERE = pp.Literal ("Where")
@@ -31,13 +40,14 @@ class Parser:
                                           pp.Regex("[a-zA-Z]+:[a-zA-Z]+:\*").setParseAction (lambda s,l,t: smtquery.qlang.nodes.BenchTrackInstances(*t[0].split(":")[:-1])) |
                                           pp.Regex("[a-zA-Z]+:\*").setParseAction (lambda s,l,t: smtquery.qlang.nodes.BenchInstances(t[0].split(":")[0]))
                                           ).setParseAction (lambda s,l,t: smtquery.qlang.nodes.InstanceList (t))
-        extract = self._makeExtractParser ()
+        extract = self._makeExtractParser (extractfunc)
+        applyf = self._makeApplyParser (applyfunc)
         preds = self._makePredicateParser (predicates)
         smtattr = self._makeSMTAttributeParser (attributes)
         
         selectparser =  (SELECT + smtattr + FROM + instancedescr + WHERE + preds).setParseAction (createSelect)
-        extractor = EXTRACT + extract + FROM + instancedescr + WHERE +preds
-        self._parser = selectparser | extractor .setParseAction(createExtract)
+        extractor = EXTRACT + extract + FROM + instancedescr + WHERE +preds + APPLY + applyf
+        self._parser = selectparser | extractor.setParseAction(createExtract)
 
     def _makeSMTAttributeParser (self,attributes):
         attri = None
@@ -49,12 +59,30 @@ class Parser:
                 attri  = lit
         return pp.delimitedList(attri).setParseAction (lambda s,l,t: smtquery.qlang.nodes.AttributeList (t)) 
                                 
-    def _makeExtractParser (self):
-        return pp.delimitedList(pp.Literal ("*") | pp.Literal ("WEQ") | pp.Literal ("LINEQ") | pp.Literal ("REGEQ") | pp.Literal ("HOFUNCTION"))
+    def _makeExtractParser (self,extracts):
+        atoms = None
+        for name,pred in extracts.items():
+            ll = pp.Literal (name).setParseAction (functools.partial (makeExtract,name,pred) )
+            if atoms == None:
+                atoms = ll
+            else:
+                atoms = atoms | ll
+        return atoms
 
+    def _makeApplyParser (self,applyf):
+        atoms = None
+        for name,pred in applyf.items():
+            ll = pp.Literal (name).setParseAction (functools.partial (makeApply,name,pred) )
+            if atoms == None:
+                atoms = ll
+            else:
+                atoms = atoms | ll
+        return atoms
+    
+    
     def _makePredicateParser (self,predicates):
         atoms = pp.Literal ("True").setParseAction (lambda s,l,t: smtquery.qlang.nodes.TT()) | pp.Literal ("False").setParseAction (lambda s,l,t: smtquery.qlang.nodes.FF())
-
+        
         for name,pred in predicates.items():
             atoms = atoms | pp.Literal (name).setParseAction (functools.partial (makePredicate,name,pred) )
         

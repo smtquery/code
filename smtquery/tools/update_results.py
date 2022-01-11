@@ -13,12 +13,14 @@ def run (args):
     storage = smtquery.config.conf.getStorage ()
     schedule = smtquery.config.conf.getScheduler ()
     ll = []
-    with smtquery.ui.Progress () as progress:
+    with smtquery.ui.output.makeProgressor () as progress:
         for file in storage.allFiles ():
             for key,solver in solvers.items ():
-                progress.message (f"Running {key} on {file.getName ()}")
-                res = schedule.runSolver (solver,file,None)#solver.runSolver (file)
+                progress.message (f"Submitting {key} to {file.getName ()}")
+                res = schedule.runSolver (solver,file,None)
                 ll.append (res)
-    for r in ll:
-        r.wait ()
+        progress.message (f"Waiting for results ... ")
+                
+        for r in ll:
+            r.wait ()
                 

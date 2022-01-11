@@ -133,9 +133,14 @@ class Interpreter:
             #print (i)
             if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
                 attriextractor.Extract (i,self._push)
-                
-    def visitExtract (self,node):
-        pass
+
+    def visitExtractNode (self,node):
+        instances = InstanceSelector().Select (node.getInstances ())
+        pred = CheckPredicate (node.getPredicates ())
+        for i in instances.enumerate ():
+            #print (i)
+            if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
+                node.getExtractFunc () (node.getApply  () (i))
     
     
 

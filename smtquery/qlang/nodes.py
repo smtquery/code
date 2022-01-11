@@ -6,6 +6,13 @@ class Visitor:
     def visitExtract (self,node):
         pass
 
+    def visitExtractFunc (self,node):
+        pass
+
+    def visitExtractNode (self,node):
+        pass
+    
+    
     def visitAllInstances (self,node):
         pass
 
@@ -68,9 +75,27 @@ class SelectNode (QNode):
         visit.visitSelect (self)
     
 class ExtractNode (QNode):
-    def __init__(self,toextract,instances,predicates):
-        super().__init__ ([toextract,instances,predicates])
+    def __init__(self,toextract,instances,predicates,applyf):
+        super().__init__ ([toextract,instances,predicates,applyf])
 
+    def accept (self,visit):
+        visit.visitExtractNode (self)
+
+    def getExtractFunc (self):
+        return self._children[0]
+
+    def getInstances (self):
+        return self._children[1]
+
+    def getPredicates (self):
+        return self._children[2]
+
+    def getApply (self):
+        return self._children[3]
+    
+    
+    
+        
 class AllInstances(QNode):
     def __init__(self):
         super().__init__ ([])
@@ -95,7 +120,41 @@ class Predicate (QNode):
     def accept (self,visit):
         visit.visitPredicate (self)
 
+class Apply (QNode):
+    def __init__ (self,name,applyfunction):
+        self._name = name
+        self._applyfunction = applyfunction
 
+    def __str__(self):
+        return self._name
+
+    def __call__(self,smtfile):
+        return self._applyfunction (smtfile)
+
+    def accept (self,visit):
+        visit.visitApply (self)
+
+
+class ExtractFunc (QNode):
+    def __init__ (self,name,extractfunction):
+        self._name = name
+        self._extractfunction = extractfunction
+
+    def __str__(self):
+        return self._name
+
+    def getExtract (self):
+        return self._extractfunction
+
+    def __call__ (self,smtfile):
+        return self._extractfunction (smtfile)
+    
+    def accept (self,visit):
+        visit.visitExtractFunc (self)
+
+
+
+        
 class Attribute (QNode):
     def __init__ (self,name,attrfunction):
         self._name = name

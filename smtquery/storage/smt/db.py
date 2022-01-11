@@ -6,6 +6,7 @@ import smtquery.solvers.solver
 import hashlib
 import smtquery.config
 import smtquery.ui
+import smtquery.intel
     
 
 class SMTFile:
@@ -122,14 +123,11 @@ class DBFSStorage:
                                  sqlalchemy.Column ('model', sqlalchemy.Text),
                                  sqlalchemy.Column ('date', sqlalchemy.DateTime),
                                  )
-        self._intels = intels
-        if intels:
-            self._makesmt = lambda name,filepath,id: self._intels.getIntel (SMTFile(name,filepath,id))
-        else:
-            self._makesmt = SMTFile
+        self._makesmt = lambda name,filepath,id: smtquery.intel.manager.getIntel (SMTFile(name,filepath,id))
+
         
     def initialise_db (self):
-        with  smtquery.ui.Progress () as progress:
+        with  smtquery.ui.output.makeProgressor () as progress:
         
             progress.message ("Initialising Database")
             self._meta.create_all (self._engine)
@@ -202,7 +200,7 @@ class DBFSStorage:
         
 
     def storagePredicates (self):
-        return self._intels.predicates ()
+        return smtquery.intel.manager.predicates ()
 
     def storageAttributes (self):
         return {
