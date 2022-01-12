@@ -43,7 +43,7 @@ class ASTRef:
         for e in self.nodes:
             e.add_intel_with_function(f,m,_condCopy(neutral),key)
             values+=[e.get_intel()[key]]
-        self.intel[key] = f(e,m(self,values))
+        self.intel[key] = m(self,values)
 
     def id(self):
         return 0

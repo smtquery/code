@@ -28,7 +28,7 @@ class HasAtom(ExprFun):
         for d in data:
             for k in set(d_new.keys()).union(set(d.keys())):
                 if k in d_new and k in d:
-                    d_new[k]=+d[k]
+                    d_new[k]+=d[k]
                 elif k in d:
                     d_new[k] = d[k]
         return d_new
@@ -82,9 +82,6 @@ class VariableCountPath(ExprFun):
         return data
 
     def merge(self,expr,data):
-        ### branching for ite is missing!
-        # we have to merge the first child with the second AND the third
-        # but this function is called independently for each child
         if isinstance(expr,ExprRef) and expr.decl() == "ite":
             assert(len(data) == 3)
             d_cond = data.pop(0)
@@ -113,18 +110,6 @@ class VariableCountPath(ExprFun):
             d_ret = d_tmp
         return d_ret
 
-
-
-        """data = []
-        if len(data1) == 0:
-            return data2
-        elif len(data2) == 0:
-            return data1
-        for d1 in data1:
-            for d2 in data2:
-                data+=[self._mergeDicts(d1,d2)]
-        return data
-        """
     def _mergeDicts(self,d1,d2):
         r_data = dict()        
         for k in set(d1.keys()).union(set(d2.keys())):
@@ -139,6 +124,11 @@ class VariableCountPath(ExprFun):
                 r_data[k] = d1[k] if isinstance(d1[k],int) else d1[k].copy()
         return r_data
 
+
+
+
+
+#### OLD SHIT
 
 class Plot(ExprFun):
     def __init__(self):
