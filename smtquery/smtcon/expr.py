@@ -26,6 +26,7 @@ class ASTRef:
     intel = dict()
 
     def __init__(self):
+        self.intel = dict()
         self.intel["variables"] = dict()
         self.nodes = []
 

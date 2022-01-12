@@ -18,7 +18,6 @@ def run (arguments):
 
     predicates = {}
     predicates.update (smtquery.intel.intels.predicates ())
-    print (predicates)
 
     for name in smtquery.config.conf.getSolvers ().keys():
         predicates[f"isSAT({name})"] = smtquery.qlang.predicates.makeSatPredicate (name)

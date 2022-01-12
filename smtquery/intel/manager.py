@@ -17,7 +17,6 @@ class Proxy:
     
 class Manager:
     def __init__(self,plugins = None):
-        print ("New Manager")
         self._plugins = plugins or {}
 
     def addPlugin (self,p):
