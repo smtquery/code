@@ -29,12 +29,12 @@ class Parser:
     def __init__(self,predicates = {}, attributes = {},
                  extractfunc = {}, applyfunc = {}
                  ):
-        SELECT = pp.Literal ("Select")
-        FROM = pp.Literal ("From")
-        WHERE = pp.Literal ("Where")
-        EXTRACT = pp.Literal ("Extract")
-        APPLY  = pp.Literal ("Apply")
-        COUNT = pp.Literal ("Count")
+        SELECT = pp.CaselessLiteral ("Select")
+        FROM = pp.CaselessLiteral ("From")
+        WHERE = pp.CaselessLiteral ("Where")
+        EXTRACT = pp.CaselessLiteral ("Extract")
+        APPLY  = pp.CaselessLiteral ("Apply")
+        COUNT = pp.CaselessLiteral ("Count")
         
         instancedescr = pp.delimitedList (pp.Literal("*").setParseAction (lambda s,l,t: smtquery.qlang.nodes.AllInstances())  |
                                           pp.Regex("[a-zA-Z]+:[a-zA-Z]+:\*").setParseAction (lambda s,l,t: smtquery.qlang.nodes.BenchTrackInstances(*t[0].split(":")[:-1])) |
@@ -81,7 +81,7 @@ class Parser:
     
     
     def _makePredicateParser (self,predicates):
-        atoms = pp.Literal ("True").setParseAction (lambda s,l,t: smtquery.qlang.nodes.TT()) | pp.Literal ("False").setParseAction (lambda s,l,t: smtquery.qlang.nodes.FF())
+        atoms = pp.CaselessLiteral ("True").setParseAction (lambda s,l,t: smtquery.qlang.nodes.TT()) | pp.CaselessLiteral ("False").setParseAction (lambda s,l,t: smtquery.qlang.nodes.FF())
         
         for name,pred in predicates.items():
             atoms = atoms | pp.Literal (name).setParseAction (functools.partial (makePredicate,name,pred) )
@@ -90,9 +90,9 @@ class Parser:
         lparan = pp.Literal ("(")
         rparan = pp.Literal (")")
         
-        preds << ((lparan + preds + pp.Literal ("AND") + preds + rparan).setParseAction (lambda s,l,t: smtquery.qlang.nodes.And (t[1],t[3]))  |   
-                  (lparan + preds +pp.Literal ("OR") + preds + rparan).setParseAction (lambda s,l,t: smtquery.qlang.nodes.Or (t[1],t[3])) |
-                  (lparan + pp.Literal("NOT") + preds +  rparan).setParseAction (lambda s,l,t: smtquery.qlang.nodes.Not (t[1],t[1])) |
+        preds << ((lparan + preds + pp.CaselessLiteral ("AND") + preds + rparan).setParseAction (lambda s,l,t: smtquery.qlang.nodes.And (t[1],t[3]))  |   
+                  (lparan + preds +pp.CaselessLiteral ("OR") + preds + rparan).setParseAction (lambda s,l,t: smtquery.qlang.nodes.Or (t[1],t[3])) |
+                  (lparan + pp.CaselessLiteral("NOT") + preds +  rparan).setParseAction (lambda s,l,t: smtquery.qlang.nodes.Not (t[2])) |
                   
                   atoms.setParseAction (lambda s,l,t: t[0]))
         return preds.setParseAction (lambda s,l,t: t[0])

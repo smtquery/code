@@ -219,7 +219,7 @@ class Or(QNode):
 
 class Not(QNode):
     def __init__(self,left):
-        super().__init__ ([left,right])
+        super().__init__ ([left])
 
     def accept (self,visit):
         visit.visitNot (self)
