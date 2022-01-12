@@ -3,13 +3,13 @@ from smtquery.smtcon.expr import *
 import graphviz
 import os
 
-class SMTPlot:
+class VariableDependencyPlot:
     colours = dict()
-    plot_output_folder = "output/plots"
+    plot_output_folder = "output/vardep"
 
     @staticmethod
     def getName ():
-        return "SMTPlot"
+        return "VarDepPlot"
 
     def __call__  (self,smtfile):
         with smtquery.ui.output.makePlainMessager () as mess:
@@ -22,20 +22,23 @@ class SMTPlot:
 
 
     def _buildGraph(self,ast,dot):
-        for a in ast:
-            dot = self._buildAssert(a,dot)
-        return dot
+        for t in ast.get_intel()["#variables"].keys():
+            for x in [var for var in ast.get_intel()["#variables"][t].keys() if ast.get_intel()["#variables"][t][var] > 0]:
+                if x not in self.colours:
+                    self.colours[x] = self._getNewColour([self.colours[l] for l in self.colours])
+                dot.node(name=f"{x}", label=f"{x}", style='filled,rounded', shape="rectangle", color=f"{self.colours[x][0]}", fontcolor=f"{self.colours[x][1]}")
 
-    def _buildAssert(self,expr,dot):
-        label = expr.decl()
-        if expr.is_variable() or expr.is_const():
-            label = f"{expr}"
-        if label not in self.colours:
-            self.colours[label] = self._getNewColour([self.colours[l] for l in self.colours])
-        dot.node(name=f"{expr.id()}", label=f"{label}", style='filled,rounded', shape="rectangle", color=f"{self.colours[label][0]}", fontcolor=f"{self.colours[label][1]}")
-        for c in expr.children():
-            dot = self._buildAssert(c,dot)
-            dot.edge(f"{expr.id()}", f"{c.id()}",penwidth="0.5",arrowhead="none")
+        for expr in ast:
+            label = expr.id()
+            if expr.is_variable() or expr.is_const():
+                continue
+            if label not in self.colours:
+                self.colours[label] = self._getNewColour([self.colours[l] for l in self.colours])
+            dot.node(name=f"{label}", label=f"{self._shortenText(str(expr))}", style='filled,rounded', shape="rectangle", color=f"{self.colours[label][0]}", fontcolor=f"{self.colours[label][1]}")
+
+            for t in expr.get_intel()["#variables"].keys():
+                for x in [var for var in expr.get_intel()["#variables"][t].keys() if expr.get_intel()["#variables"][t][var] > 0]:
+                    dot.edge(f"{x}", f"{label}",penwidth="0.5",arrowhead="none")
         return dot
 
     # auxilary functions
@@ -53,6 +56,12 @@ class SMTPlot:
             if newColour not in colours:
                 return newColour
 
+
+    def _shortenText(self,text):
+        if len(text) > 20:
+            return text[:20]+"..."
+        return text
+
     def _getOutputFileName(self,smtfileName):
         rel_filepath = ''.join(f"/{f}" for f in smtfileName.split(":")[:-1])
         filename = smtfileName.split(":")[-1]
@@ -64,4 +73,4 @@ class SMTPlot:
         return file_path
 
 def PullExtractor():
-    return [SMTPlot]
+    return [VariableDependencyPlot]
