@@ -1,5 +1,6 @@
 import hashlib
 import math
+import smtquery.smtcon.utils as utils
 
 from smtquery.smtcon.expr import *
 
@@ -19,10 +20,10 @@ class ExprFun:
 
 class AssertTrue(ExprFun):
     def __init__(self):
-        super().__init__('AssertTrue', '0.0.1')
+        super().__init__('AssertTrue', '0.0.2')
 
     def apply(self, expr, data):
-        if isinstance(expr, BoolExpr) and ['true'] in [x.params() for x in expr.children()]:
+        if expr.decl() == '=' and 'true' in [str(x) for x in expr.children()]:
             data += 1
         return data
 
@@ -72,7 +73,7 @@ class HashConstraints(ExprFun):
 
 class Bounded(ExprFun):
     def __init__(self):
-        super().__init__('Bounded', '0.0.1')
+        super().__init__('Bounded', '0.0.2')
 
     def apply(self, expr, data):
         # TODO !=
@@ -106,7 +107,6 @@ class Bounded(ExprFun):
         return data
 
     def merge(self, expr, data):
-        # TODO: merge constraints on equal variables
         d_new = dict()
         for d in data:
             for k in set(d_new.keys()).union(set(d.keys())):
@@ -117,6 +117,66 @@ class Bounded(ExprFun):
                     d_new[k] = d[k]
         return d_new
 
+class Fragments(ExprFun):
+    def __init__(self):
+        super().__init__('Fragments', '0.0.1')
+
+    def apply(self, expr, data):
+        # determine fragment for current node
+        pass
+
+    def merge(self, expr, data):
+        # select least restrictive fragment
+        pass
+
+class PatternMatching(ExprFun):
+    def __init__(self):
+        super().__init__('PatternMatching', '0.0.1')
+
+    def apply(self, expr, data):
+        if expr.is_variable():
+            if isinstance(data, utils.Pattern):
+                return utils.Pattern(data.vs + [str(expr)])
+            return utils.Variable(str(expr))
+        elif expr.is_const():
+            if isinstance(data, utils.Pattern):
+                return utils.Pattern(data.vs)
+            return utils.Pattern([])
+        return data
+
+    def merge(self, expr, data):
+        if expr.kind() == Kind.WEQ:
+            if any(isinstance(d, utils.NonMatching) for d in data):
+                return utils.NonMatching()
+            v, vs = None, []
+            for d in data:
+                if isinstance(d, utils.Variable):
+                    if v:
+                        vs += [v]
+                    else:
+                        v = d.v
+                elif isinstance(d, utils.Pattern):
+                    vs = d.vs
+            if v is None or vs is None:
+                return utils.NonMatching()
+            return utils.Matching(v, vs)
+        elif expr.kind() == Kind.OTHER and expr.decl() == 'str.++':
+            if any(isinstance(d, utils.NonMatching) for d in data):
+                return utils.NonMatching()
+            vs = []
+            for d in data:
+                if isinstance(d, utils.Variable):
+                    vs += [d.v]
+                elif isinstance(d, utils.Pattern):
+                    vs += d.vs
+            return utils.Pattern(vs)
+        elif expr.kind() == Kind.OTHER and expr.decl() == 'and':
+            if any(isinstance(d, utils.NonMatching) for d in data):
+                return utils.NonMatching()
+            return data
+        elif expr.kind() not in [None, Kind.VARIABLE, Kind.CONSTANT]:
+            return utils.NonMatching()
+        return data
 
 class HasAtom(ExprFun):
     def __init__(self):
