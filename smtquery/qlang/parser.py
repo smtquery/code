@@ -2,12 +2,17 @@ import functools
 import pyparsing as pp
 import smtquery.qlang.nodes
 
-
 def createSelect (s,l,toks):
-    return smtquery.qlang.nodes.SelectNode (toks[1],toks[3],toks[5])
+    tokd = token2Dict(toks)
+    if "WHERE" not in tokd:
+        tokd["WHERE"] = None
+    return smtquery.qlang.nodes.SelectNode (tokd["SELECT"],tokd["FROM"],tokd["WHERE"])
 
 def createExtract (s,l,toks):
-    return smtquery.qlang.nodes.ExtractNode (toks[1],toks[3],toks[5],toks[7])
+    tokd = token2Dict(toks)
+    if "WHERE" not in tokd:
+        tokd["WHERE"] = None
+    return smtquery.qlang.nodes.ExtractNode (tokd["EXTRACT"],tokd["FROM"],tokd["WHERE"],tokd["APPLY"])
 
 def makePredicate (name,pred,s,l,toks):
     return smtquery.qlang.nodes.Predicate(name,pred)
@@ -23,7 +28,13 @@ def makeAttribute (name,attribute,s,l,toks):
     return smtquery.qlang.nodes.Attribute(name,attribute)
 
 
-
+def token2Dict(toks):
+    tokd = dict()
+    i = 0
+    while i < len(toks):
+        tokd[toks[i].upper()] = toks[i+1]
+        i+=2
+    return tokd
 
 class Parser:
     def __init__(self,predicates = {}, attributes = {},
@@ -45,8 +56,8 @@ class Parser:
         preds = self._makePredicateParser (predicates)
         smtattr = self._makeSMTAttributeParser (attributes)
         
-        selectparser =  (SELECT + smtattr + FROM + instancedescr + WHERE + preds).setParseAction (createSelect)
-        extractor = EXTRACT + extract + FROM + instancedescr + WHERE +preds + APPLY + applyf
+        selectparser =  (SELECT + smtattr + FROM + instancedescr + pp.Optional(WHERE + preds)).setParseAction (createSelect)
+        extractor = EXTRACT + extract + FROM + instancedescr + pp.Optional(WHERE + preds) + APPLY + applyf
         self._parser = selectparser | extractor.setParseAction(createExtract)
 
     def _makeSMTAttributeParser (self,attributes):
