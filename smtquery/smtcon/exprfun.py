@@ -125,6 +125,88 @@ class VariableCountPath(ExprFun):
         return r_data
 
 
+class RegexStructure(ExprFun):
+    ere_sequences = [["re.comp","Star","re.comp"],["re.comp","Plus","re.comp"],["Intersect","Plus"],["Intersect","Star"]]
+
+    def __init__(self):
+        super().__init__ ("RegexStructure","0.0.1")
+
+    def apply (self, expr, data):
+        if expr.decl() != "str.in_re":
+            return data
+
+        pat,regex = expr.children()[0],expr.children()[1]
+
+        concatenation = not(self._isSimplePattern(pat) or pat.is_variable())
+        
+        complement = False
+        paths = self._getAllPaths(self._buildRegLanGraph(regex),(0,regex.decl()))
+        for seq in self.ere_sequences:
+            if complement:
+                break
+            for p in paths:
+                pp = [str(c) for c in p if str(c) in seq]
+                complement = self._sublist(seq,pp)
+                if complement:
+                    break
+        
+        if "concatenation" in data:
+           data = {"concatenation" : concatenation or data["concatenation"], "complement" : complement or data["complement"]} 
+        else:
+            data = {"concatenation" : concatenation, "complement" : complement}
+        return data
+
+    def merge(self,expr,data):
+        data_new = {"concatenation" : False, "complement" : False}
+        for d in data:
+            if "concatenation" in d:
+                data_new = {"concatenation" : d["concatenation"] or data_new["concatenation"], "complement" : d["complement"] or data_new["complement"]}
+        return data_new
+
+    # pattern analysis
+    def _isSimplePattern(self,expr,sp=True):
+        if len(expr.children()) > 0:
+            if expr.decl() in ["str.substr"]:
+                return False
+            if expr.decl() not in ["At"]:
+                for c in expr.children():
+                    sp = sp and self._isSimplePattern(c)
+        else:
+            sp = sp and expr.is_const()
+        return sp
+
+    # regex analysis
+    def _buildRegLanGraph(self,regex,idx=0):
+        edges = dict()
+        if len(regex.children()) > 0:
+            v1 = regex.decl()
+            thisIdx = idx
+            edges[(thisIdx,v1)] = set()
+            for v2 in regex.children():
+                idx+=1
+                edges[(thisIdx,v1)].add((idx,v2.decl()))
+                edges = {**edges, **self._buildRegLanGraph(v2,idx)} #edges | buildRegLanGraph(v2,idx)
+        return edges
+
+    def _getAllPaths(self,graph,start):
+        paths = []
+        waiting = [[start]]
+        while len(waiting) > 0:
+            p = waiting.pop()
+            v1 = p[-1]
+            if v1 in graph:
+                # it does not contain cycles!!!
+                for v2 in graph[v1]:
+                    waiting+=[p+[v2]] 
+            else:
+                paths+=[[x[1] for x in p]]
+        return paths
+
+    def _sublist(self,lst1, lst2):
+       return len(lst2) >= len(lst1) and [element for element in lst2 if element in lst1] == [element for element in lst1 if element in lst2]
+
+        
+
 
 
 

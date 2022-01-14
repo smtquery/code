@@ -24,7 +24,11 @@ class Probes:
         with open(pickle_file_path, 'wb') as handle:
             pickle.dump(ast, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def getAST(self,smtfile,filepath):
+    def getAST(self,smtfile,filepath,use_cache=True):
+        # for testing purpose
+        if not use_cache:
+            return self._smtprobe.getAST (filepath)
+
         rel_filepath = ''.join(f"/{f}" for f in smtfile.getName().split(":")[:-1])
         filename = smtfile.getName().split(":")[-1]
         pickle_file_path = f"{self._pickleBasePath}{rel_filepath}/{smtfile.hashContent()}_{filename}.pickle"
@@ -49,12 +53,14 @@ class Probes:
             pr = self.getAST(smtfile,filepath)
             for (name,c) in self.intels().items():
                 self.addIntel(smtfile,pr,c[0],c[1],name)
+
+            #print(smtfile.getName(),pr.intel["regex"])
             return pr
 
     def intels (self):
-        t = dict()
         return {
-            "has" : (smtquery.smtcon.exprfun.HasAtom(),t),
+            "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
+            "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
             "#variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
             "pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
         }
