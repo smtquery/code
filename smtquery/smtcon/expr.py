@@ -191,6 +191,9 @@ class ExprRef:
     def get_intel(self):
         return self.intel
 
+    def reset_intel(self):
+        self.intel = dict()
+
     def __repr__(self):
         if self.is_const():
             return ''.join(f"{s}" for s in self.vParams)

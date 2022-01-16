@@ -8,7 +8,7 @@ class DummyPrinter:
 
     def __call__  (self,smtfile):
         with smtquery.ui.output.makePlainMessager () as mess:
-            mess.message (smtfile)
+            mess.message (smtfile.getName())
 
 
 def PullExtractor():
