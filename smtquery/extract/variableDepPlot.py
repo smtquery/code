@@ -11,6 +11,9 @@ class VariableDependencyPlot:
     def getName ():
         return "VarDepPlot"
 
+    def finalise(self): 
+        pass
+
     def __call__  (self,smtfile):
         with smtquery.ui.output.makePlainMessager () as mess:
             mess.message (smtfile.getName())
@@ -22,8 +25,8 @@ class VariableDependencyPlot:
 
 
     def _buildGraph(self,ast,dot):
-        for t in ast.get_intel()["#variables"].keys():
-            for x in [var for var in ast.get_intel()["#variables"][t].keys() if ast.get_intel()["#variables"][t][var] > 0]:
+        for t in ast.get_intel()["variables"].keys():
+            for x in ast.get_intel()["variables"][t]: #[var for var in ast.get_intel()["#variables"][t].keys() if ast.get_intel()["#variables"][t][var] > 0]:
                 if x not in self.colours:
                     self.colours[x] = self._getNewColour([self.colours[l] for l in self.colours])
                 dot.node(name=f"{x}", label=f"{x}", style='filled,rounded', shape="rectangle", color=f"{self.colours[x][0]}", fontcolor=f"{self.colours[x][1]}")
@@ -36,8 +39,8 @@ class VariableDependencyPlot:
                 self.colours[label] = self._getNewColour([self.colours[l] for l in self.colours])
             dot.node(name=f"{label}", label=f"{self._shortenText(str(expr))}", style='filled,rounded', shape="rectangle", color=f"{self.colours[label][0]}", fontcolor=f"{self.colours[label][1]}")
 
-            for t in expr.get_intel()["#variables"].keys():
-                for x in [var for var in expr.get_intel()["#variables"][t].keys() if expr.get_intel()["#variables"][t][var] > 0]:
+            for t in expr.get_intel()["variables"].keys():
+                for x in expr.get_intel()["variables"][t]: #[var for var in expr.get_intel()["#variables"][t].keys() if expr.get_intel()["#variables"][t][var] > 0]:
                     dot.edge(f"{x}", f"{label}",penwidth="0.5",arrowhead="none")
         return dot
 

@@ -152,6 +152,8 @@ class Interpreter:
         else:
             for i in instances.enumerate ():
                 node.getExtractFunc () (node.getApply  () (i))
+            node.getExtractFunc ().finalise()
+
     
     
 

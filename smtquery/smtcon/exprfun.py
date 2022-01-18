@@ -10,7 +10,7 @@ class ExprFun:
         return self._version
     def apply (self, expr, data):
         return None
-    def merge(self, expr, data1, data2):
+    def merge(self, expr, data):
         return None
 
 class HasAtom(ExprFun):
