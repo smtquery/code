@@ -24,7 +24,7 @@ class Probes:
         with open(pickle_file_path, 'wb') as handle:
             pickle.dump(ast, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def getAST(self,smtfile,filepath,use_cache=False):
+    def getAST(self,smtfile,filepath,use_cache=True):
         # for testing purpose
         if not use_cache:
             return self._smtprobe.getAST (filepath)
