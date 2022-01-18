@@ -149,6 +149,7 @@ class Interpreter:
             for i in instances.enumerate ():
                 if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
                     node.getExtractFunc () (node.getApply  () (i))
+            node.getExtractFunc ().finalise()
         else:
             for i in instances.enumerate ():
                 node.getExtractFunc () (node.getApply  () (i))

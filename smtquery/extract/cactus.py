@@ -3,15 +3,15 @@ from smtquery.solvers.solver import *
 
 class CactusPlot:
     _results = dict()
-
+    output_folder = "./output/cactus/"
 
     @staticmethod
     def getName ():
         return "CactusPlot"
 
     def finalise(self):
-        self._generateCactus(self._generateCactusData())
-
+        self._generateCactus(self._generateCactusData(),self.output_folder)
+        
     def __call__  (self,smtfile):
         # collect results
         _storage = smtquery.config.conf.getStorage ()
@@ -25,8 +25,9 @@ class CactusPlot:
                     self._results[s] = []
                 if res[s]["result"] in [Result.NotSatisfied,Result.Satisfied]:
                     self._results[s]+=[(b_id,res[s]["time"])]
-        with smtquery.ui.output.makePlainMessager () as mess:
-            mess.message (smtfile.getName())
+
+        #with smtquery.ui.output.makePlainMessager () as mess:
+        #    mess.message (smtfile.getName())
 
     def _generateCactusData(self):
         self._results = {s : sorted(self._results[s], key=lambda r:r[1]) for s in self._results.keys()}
@@ -39,7 +40,7 @@ class CactusPlot:
                 cactus_data[s]+=[{"x" : i, "instance" : r[0], "time" : r[1], "y" : t_time }]
         return cactus_data
 
-    def _generateCactus(self,cactus_data):
+    def _generateCactus(self,cactus_data,file_path):
         from matplotlib.figure import Figure
         from matplotlib.font_manager import FontProperties
         from io import BytesIO
@@ -69,7 +70,8 @@ class CactusPlot:
             # Save it to a temporary buffer.
             buf = BytesIO()
 
-        fig.savefig(f"test.png",format="png",dpi=320,prop=fontP,bbox_extra_artists=(lgd,), bbox_inches='tight')
+        os.makedirs(file_path,exist_ok = True)
+        fig.savefig(f"{file_path}/cactus.png",format="png",dpi=320,prop=fontP,bbox_extra_artists=(lgd,), bbox_inches='tight')
 
     ## aux
     def _colourGen(self):
