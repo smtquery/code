@@ -21,7 +21,8 @@ def hasWordRegex (smtfile):
 def isSat (smtfile,solvername):
     solver = smtquery.config.conf.getSolvers ()[solvername]
     schedule = smtquery.config.conf.getScheduler ()
-    res = schedule.runSolver (solver,smtfile,None)
+    run_parameters = smtquery.config.conf.getRunParameters ()
+    res = schedule.runSolver (solver,smtfile,run_parameters["timeout"])
     res.wait ()
     res = schedule.interpretSolverRes (res)
     if res.getResult () == smtquery.solvers.solver.Result.Satisfied:

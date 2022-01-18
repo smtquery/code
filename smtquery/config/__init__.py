@@ -13,11 +13,13 @@ class Configuration:
     def __init__(self,
                  solvers,
                  storage,
-                 scheduler
+                 scheduler,
+                 runParameters
                  ):
         self._solvers = solvers
         self._storage = storage
         self._scheduler = scheduler
+        self._runParameters = runParameters
 
     def getSolvers (self):
         return self._solvers
@@ -27,6 +29,9 @@ class Configuration:
 
     def getScheduler (self):
         return self._scheduler
+
+    def getRunParameters (self):
+        return self._runParameters
 
 def createSolvers (solverdata):
     solverarr = {}
@@ -66,5 +71,6 @@ def readConfig (conffile):
     solverarr = createSolvers (data["solvers"])
     scheduler = createFrontScheduler (data["scheduler"])
     storage = createStorage (data["SMTStore"])
-    conf = Configuration (solverarr,storage,scheduler)
+    runParameters = data["runParameters"]
+    conf = Configuration (solverarr,storage,scheduler,runParameters)
     

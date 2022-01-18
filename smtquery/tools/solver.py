@@ -16,12 +16,13 @@ def run (args):
     solver = smtquery.config.conf.getSolvers ()[args.solver]
     storage = smtquery.config.conf.getStorage ()
     schedule = smtquery.config.conf.getScheduler ()
+    run_parameters = smtquery.config.conf.getRunParameters ()
 
     file = storage.searchFile (args.benchmark,args.track,args.smtfile)
 
     if file:
         print (smtquery.qlang.predicates.hasWordEquations (file))
-        res = schedule.runSolver (solver,file,None)#solver.runSolver (file)
+        res = schedule.runSolver (solver,file,run_parameters["timeout"])#solver.runSolver (file)
         res.wait ()
         print (schedule.interpretSolverRes (res))
     

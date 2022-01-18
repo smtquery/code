@@ -23,11 +23,12 @@ with open (filelocator.findFile("conf.yml")) as ff:
 solver = smtquery.config.conf.getSolvers ()[args.solver]
 storage = smtquery.config.conf.getStorage ()
 schedule = smtquery.config.conf.getScheduler ()
+run_parameters = smtquery.config.conf.getRunParameters ()
 
 file = storage.searchFile (args.benchmark,args.track,args.smtfile)
 
 if file:
-    res = schedule.runSolver (solver,file,None)
+    res = schedule.runSolver (solver,file,run_parameters["timeout"])
     res.wait ()
     print (schedule.interpretSolverRes (res))
     
