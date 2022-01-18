@@ -181,8 +181,7 @@ class DBFSStorage:
         conn = self._engine.connect ()
         res = conn.execute (self._instance_table.select ())
         for row in res.fetchall ():
-            yield self._makesmt (row.name,row.path,row.id)
-        
+            yield self._makesmt (row.name,row.path,row.id)        
     
     def storeResult (self,result,smtfile,solver):
         conn = self._engine.connect ()
@@ -208,3 +207,18 @@ class DBFSStorage:
             "Hash" : lambda smtfile: smtfile.hashContent (),
             "Content" : lambda smtfile: smtfile.SMTString (),            
         }
+
+    # queries
+    def getResultsForBenchmarkId(self,id):
+        conn = self._engine.connect ()
+        res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id))
+        results = dict()
+        for row in res.fetchall ():
+            results[row.solver] = {"result" : row.result, "time" : row.time}
+        return results
+
+
+
+
+
+
