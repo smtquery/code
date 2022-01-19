@@ -71,7 +71,7 @@ class CactusPlot:
             buf = BytesIO()
 
         os.makedirs(file_path,exist_ok = True)
-        fig.savefig(f"{file_path}/cactus.png",format="png",dpi=320,prop=fontP,bbox_extra_artists=(lgd,), bbox_inches='tight')
+        fig.savefig(f"{file_path}/cactus.pdf",format="pdf",dpi=320,prop=fontP,bbox_extra_artists=(lgd,), bbox_inches='tight')
 
     ## aux
     def _colourGen(self):

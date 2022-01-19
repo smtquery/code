@@ -53,7 +53,6 @@ class Probes:
             pr = self.getAST(smtfile,filepath)
             for (name,c) in self.intels().items():
                 self.addIntel(smtfile,pr,c[0],c[1],name)
-
             #print(smtfile.getName(),pr.intel["regex"])
             return pr
 
@@ -69,7 +68,9 @@ class Probes:
         return {
             "hasWEQ" : partial(hasKind,Kind.WEQ),
             "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
-            "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT)
+            "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT),
+            "isSimpleRegex" : lambda smtfile: (isSimpleRegex(smtfile) and not hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
+            "isSimpleRegexConcatenation" : lambda smtfile: (isSimpleRegex(smtfile) and hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True
         }
 
     @staticmethod
@@ -86,7 +87,22 @@ def hasKind(kind,smtfile):
     if kind in smtfile.Probes.get_intel()["has"]:
         return smtquery.qlang.predicates.Trool.TT
     else:
-        return smtquery.qlang.predicates.Trool.FF 
+        return smtquery.qlang.predicates.Trool.FF
+
+# Regex
+def isSimpleRegex(smtfile):
+    if not smtfile.Probes.get_intel()["regex"]["complement"]:
+        return smtquery.qlang.predicates.Trool.TT
+    else:
+        return smtquery.qlang.predicates.Trool.FF
+
+def hasConcatenationRegex(smtfile):
+    if not smtfile.Probes.get_intel()["regex"]["concatenation"]:
+        return smtquery.qlang.predicates.Trool.TT
+    else:
+        return smtquery.qlang.predicates.Trool.FF
+
+
 
 
 def makePlugin ():

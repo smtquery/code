@@ -2,14 +2,8 @@ import smtquery.config
 import smtquery.solvers.solver
 
 import re
-import enum
 
-class Trool(enum.Enum):
-    TT = 0
-    FF = 1
-    Maybe = 2
-
-
+from smtquery.qlang.trool import *
 
 def hasWordRegex (smtfile):
     if smtfile.OldProbes['regex'] > 0:
