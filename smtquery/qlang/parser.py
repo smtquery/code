@@ -12,6 +12,8 @@ def createExtract (s,l,toks):
     tokd = token2Dict(toks)
     if "WHERE" not in tokd:
         tokd["WHERE"] = None
+    if "APPLY" not in tokd:
+        tokd["APPLY"] = smtquery.qlang.nodes.Apply("DummyApply",smtquery.apply.dummy.DummyApply())
     return smtquery.qlang.nodes.ExtractNode (tokd["EXTRACT"],tokd["FROM"],tokd["WHERE"],tokd["APPLY"])
 
 def makePredicate (name,pred,s,l,toks):
@@ -57,7 +59,7 @@ class Parser:
         smtattr = self._makeSMTAttributeParser (attributes)
         
         selectparser =  (SELECT + smtattr + FROM + instancedescr + pp.Optional(WHERE + preds)).setParseAction (createSelect)
-        extractor = EXTRACT + extract + FROM + instancedescr + pp.Optional(WHERE + preds) + APPLY + applyf
+        extractor = EXTRACT + extract + FROM + instancedescr + pp.Optional(WHERE + preds) + pp.Optional(APPLY + applyf)
         self._parser = selectparser | extractor.setParseAction(createExtract)
 
     def _makeSMTAttributeParser (self,attributes):
