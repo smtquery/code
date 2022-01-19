@@ -149,7 +149,7 @@ class DBFSStorage:
                                                                             bench_id = bench_id)).inserted_primary_key[0]
 
                     for instance in os.listdir (trackpath):
-                        if not instance.endswith (".smt"):
+                        if not (instance.endswith (".smt") or instance.endswith (".smt2") or instance.endswith (".smt25")):
                             continue
                         instancepath = os.path.join (trackpath,instance)
                         dbvalues = {"name": f"{bench}:{track}:{instance}",
