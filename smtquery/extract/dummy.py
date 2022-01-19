@@ -6,7 +6,7 @@ class DummyPrinter:
     def getName ():
         return "DummyExtract"
 
-    def finalise(self):
+    def finalise(self,total):
         pass
         
     def __call__  (self,smtfile):

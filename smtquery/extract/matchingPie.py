@@ -9,9 +9,8 @@ class MatchingPie:
     def getName ():
         return "MatchingPie"
 
-    def finalise(self):
-        all_instances_count = sum(1 for i in smtquery.config.conf.getStorage().allFiles())
-        self._generatePie({f"rest ({all_instances_count-self._matchingCount} instances)" : all_instances_count-self._matchingCount, f"matching ({self._matchingCount} instances)" : self._matchingCount})
+    def finalise(self,total):
+        self._generatePie({f"rest ({total-self._matchingCount} instances)" : total-self._matchingCount, f"matching ({self._matchingCount} instances)" : self._matchingCount})
 
     def __call__  (self,smtfile):
         self._matchingCount+=1

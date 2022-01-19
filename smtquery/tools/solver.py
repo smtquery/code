@@ -21,7 +21,6 @@ def run (args):
     file = storage.searchFile (args.benchmark,args.track,args.smtfile)
 
     if file:
-        print (smtquery.qlang.predicates.hasWordEquations (file))
         res = schedule.runSolver (solver,file,run_parameters["timeout"])#solver.runSolver (file)
         res.wait ()
         print (schedule.interpretSolverRes (res))

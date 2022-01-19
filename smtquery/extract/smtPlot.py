@@ -11,7 +11,7 @@ class SMTPlot:
     def getName ():
         return "SMTPlot"
 
-    def finalise(self): 
+    def finalise(self,total): 
         pass
 
     def __call__  (self,smtfile):

@@ -48,8 +48,8 @@ class Parser:
         COUNT = pp.CaselessLiteral ("Count")
         
         instancedescr = pp.delimitedList (pp.Literal("*").setParseAction (lambda s,l,t: smtquery.qlang.nodes.AllInstances())  |
-                                          pp.Regex("[a-zA-Z]+:[a-zA-Z]+:\*").setParseAction (lambda s,l,t: smtquery.qlang.nodes.BenchTrackInstances(*t[0].split(":")[:-1])) |
-                                          pp.Regex("[a-zA-Z]+:\*").setParseAction (lambda s,l,t: smtquery.qlang.nodes.BenchInstances(t[0].split(":")[0]))
+                                          pp.Regex("[a-zA-Z0-9]+:[a-zA-Z0-9]+").setParseAction (lambda s,l,t: smtquery.qlang.nodes.BenchTrackInstances(*t[0].split(":"))) |
+                                          pp.Regex("[a-zA-Z0-9]+").setParseAction (lambda s,l,t: smtquery.qlang.nodes.BenchInstances(t[0].split(":")[0]))
                                           ).setParseAction (lambda s,l,t: smtquery.qlang.nodes.InstanceList (t))
         extract = self._makeExtractParser (extractfunc)
         applyf = self._makeApplyParser (applyfunc)

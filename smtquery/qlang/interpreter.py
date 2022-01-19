@@ -144,16 +144,19 @@ class Interpreter:
     def visitExtractNode (self,node):
         instances = InstanceSelector().Select (node.getInstances ())
         plain_pred = node.getPredicates ()
+        total_checked_instances = 0
         if plain_pred != None:
             pred = CheckPredicate (plain_pred)
             for i in instances.enumerate ():
+                total_checked_instances+=1
                 if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
                     node.getExtractFunc () (node.getApply  () (i))
-            node.getExtractFunc ().finalise()
+            node.getExtractFunc ().finalise(total_checked_instances)
         else:
             for i in instances.enumerate ():
+                total_checked_instances+=1
                 node.getExtractFunc () (node.getApply  () (i))
-            node.getExtractFunc ().finalise()
+            node.getExtractFunc ().finalise(total_checked_instances)
 
     
     

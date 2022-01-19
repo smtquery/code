@@ -9,7 +9,7 @@ class CactusPlot:
     def getName ():
         return "CactusPlot"
 
-    def finalise(self):
+    def finalise(self,total):
         self._generateCactus(self._generateCactusData(),self.output_folder)
         
     def __call__  (self,smtfile):

@@ -149,8 +149,8 @@ class ExtractFunc (QNode):
     def __call__ (self,smtfile):
         return self._extractfunction (smtfile)
 
-    def finalise(self):
-        return self._extractfunction.finalise()
+    def finalise(self,total):
+        return self._extractfunction.finalise(total)
     
     def accept (self,visit):
         visit.visitExtractFunc (self)
