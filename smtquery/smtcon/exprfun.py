@@ -73,10 +73,10 @@ class HashConstraints(ExprFun):
 
 class Bounded(ExprFun):
     def __init__(self):
-        super().__init__('Bounded', '0.0.2')
+        super().__init__('Bounded', '0.1.0')
 
+    # data = [dict(),...]
     def apply(self, expr, data):
-        # TODO !=
         if expr.kind() == Kind.WEQ:
             v, c = None, None
             for e in expr.children():
@@ -85,37 +85,121 @@ class Bounded(ExprFun):
                 elif e.is_const():
                     c = len(str(e))-2
             if v and c:
-                data.update({v: (c, c)})
+                if len(data) == 0:
+                    data += [dict()]
+                for d in data:
+                    if 'weq' not in d:
+                        d['weq'] = dict()
+                    d['weq'][v] = (c, c)
         elif expr.kind() == Kind.LENGTH_CONSTRAINT:
             v, c = None, None
-            for e in expr.children():
+            ci = 0
+            for i, e in enumerate(expr.children()):
                 if e.is_const():
                     c = int(str(e))
+                    ci = i
                 elif e.kind() == Kind.OTHER:
                     v = str(e.children()[0])
             if v and c:
-                if expr.decl() == '<':
-                    data.update({v: (0, c-1)})
-                elif expr.decl() == '>':
-                    data.update({v: (c+1, float('inf'))})
-                elif expr.decl() == '<=':
-                    data.update({v: (0, c)})
-                elif expr.decl() == '>=':
-                    data.update({v: (c, float('inf'))})
-                elif expr.decl() == '=':
-                    data.update({v: (c, c)})
+                if len(data) == 0:
+                    data += [dict()]
+                for d in data:
+                    if 'lc' not in data:
+                        d['lc'] = dict()
+                    if (expr.decl() == '<' and ci == 1) or (expr.decl() == '>' and ci == 0):
+                        d['lc'][v] = (0, c-1)
+                    elif (expr.decl() == '>' and ci == 1) or (expr.decl() == '<' and ci == 0):
+                        d['lc'][v] = (c+1, float('inf'))
+                    elif (expr.decl() == '<=' and ci == 1) or (expr.decl() == '>=' and ci == 0):
+                        d['lc'][v] = (0, c)
+                    elif (expr.decl() == '>=' and ci == 1) or (expr.decl() == '<=' and ci == 0):
+                        d['lc'][v] = (c, float('inf'))
+                    elif expr.decl() == '=':
+                        d['lc'][v] = (c, c)
         return data
 
     def merge(self, expr, data):
-        d_new = dict()
-        for d in data:
-            for k in set(d_new.keys()).union(set(d.keys())):
-                if k in d_new and k in d:
-                    # merge
-                    d_new[k] = (max(d_new[k][0], d[k][0]), min(d_new[k][1], d[k][1]))
-                elif k in d:
-                    d_new[k] = d[k]
-        return d_new
+        # implement branching
+        if isinstance(expr, ExprRef) and expr.decl() == 'ite':
+            d_cond = data.pop(0)
+            d_ret = []
+            for dd in data.pop(0):
+                for d in d_cond:
+                    d_ret += [self._mergeDicts(d, dd)]
+            for dd in data.pop(0):
+                for d in self._negateDicts(d_cond):
+                    d_ret += [self._mergeDicts(d, dd)]
+            return d_ret
+        if isinstance(expr, ExprRef) and expr.decl() == 'or':
+            return [d for path in data for d in path]
+        # demorgan
+        if isinstance(expr, ExprRef) and expr.decl() == 'not':
+            return self._negateDicts(data[0])
+
+        d_ret = data.pop(0) if len(data) > 0 else dict()
+        while len(data) > 0:
+            d_tmp = []
+            d_n = data.pop(0)
+            if len(d_ret) == 0:
+                d_tmp = d_n
+            elif len(d_n) == 0:
+                d_tmp = d_ret
+            else:
+                for d in d_ret:
+                    for dd in d_n:
+                        d_tmp += [self._mergeDicts(d, dd)]
+            d_ret = d_tmp
+        return d_ret
+
+    def _mergeDicts(self, d1, d2):
+        print(f'in: {d1} and {d2}')
+        r_data = dict()
+        for k in set(d1.keys()).union(set(d2.keys())):
+            r_data[k] = dict()
+        for t in ['lc', 'weq']:
+            if t in set(d1.keys()).intersection(set(d2.keys())):
+                for k in set(d1[t].keys()).union(set(d2[t].keys())):
+                    if k in d1[t] and k in d2[t]:
+                        # check interval overlap
+                        l1, u1 = d1[t][k]
+                        l2, u2 = d2[t][k]
+                        if l1 <= u2 and l2 <= u1:
+                            r_data[t][k] = (max(l1, l2), min(u1,u2))
+                        else:
+                            # if no overlap then length constraint is unsat
+                            r_data[t][k] = (float('inf'), float('inf'))
+                    elif k in d2[t]:
+                        r_data[t][k] = d2[t][k]
+                    elif k in d1[t]:
+                        r_data[t][k] = d1[t][k]
+            elif t in d1.keys():
+                r_data[t] = d1[t]
+            elif t in d2.keys():
+                r_data[t] = d2[t]
+        print(f'out: {r_data}')
+        return r_data
+
+    # currently only single bound dicts can be negated
+    def _negateDicts(self, ds):
+        # pop ds and negate
+        # while ds not empty
+        # pop ds, negate and merge
+        d1 = ds.pop()
+        r_data = []
+        # length constraints from word equations are eliminated by negation
+        if 'weq' in d1.keys():
+            r_data += [{}]#r_data += [{'weq': {}}]
+        if 'lc' not in d1.keys():
+            return r_data
+        for k, v in d1['lc'].items():
+            l, u = v
+            if l != 0:
+                r_data += [{'lc': {k: (0, l-1)}}]
+            if u != float('inf'):
+                r_data += [{'lc': {k: (u+1, float('inf'))}}]
+            if l == 0 and u == float('inf'):
+                r_data += [{'lc': {k: (float('inf'), float('inf'))}}]
+        return r_data
 
 class Fragments(ExprFun):
     def __init__(self):
@@ -131,9 +215,11 @@ class Fragments(ExprFun):
 
 class PatternMatching(ExprFun):
     def __init__(self):
-        super().__init__('PatternMatching', '0.0.1')
+        super().__init__('PatternMatching', '0.0.2')
 
     def apply(self, expr, data):
+        if data == 'non_matching':
+            return 'non_matching'
         if expr.is_variable():
             if isinstance(data, utils.Pattern):
                 return utils.Pattern(data.vs + [str(expr)])
@@ -142,27 +228,20 @@ class PatternMatching(ExprFun):
             if isinstance(data, utils.Pattern):
                 return utils.Pattern(data.vs)
             return utils.Pattern([])
-        return data
-
-    def merge(self, expr, data):
-        if expr.kind() == Kind.WEQ:
-            if any(isinstance(d, utils.NonMatching) for d in data):
-                return utils.NonMatching()
+        elif expr.kind() == Kind.WEQ:
             v, vs = None, []
             for d in data:
                 if isinstance(d, utils.Variable):
                     if v:
-                        vs += [v]
+                        vs += [d.v]
                     else:
                         v = d.v
                 elif isinstance(d, utils.Pattern):
                     vs = d.vs
-            if v is None or vs is None:
-                return utils.NonMatching()
+            if v is None or vs is None or v in vs:
+                return 'non_matching'
             return utils.Matching(v, vs)
         elif expr.kind() == Kind.OTHER and expr.decl() == 'str.++':
-            if any(isinstance(d, utils.NonMatching) for d in data):
-                return utils.NonMatching()
             vs = []
             for d in data:
                 if isinstance(d, utils.Variable):
@@ -171,12 +250,69 @@ class PatternMatching(ExprFun):
                     vs += d.vs
             return utils.Pattern(vs)
         elif expr.kind() == Kind.OTHER and expr.decl() == 'and':
-            if any(isinstance(d, utils.NonMatching) for d in data):
-                return utils.NonMatching()
             return data
-        elif expr.kind() not in [None, Kind.VARIABLE, Kind.CONSTANT]:
-            return utils.NonMatching()
+        return 'non_matching'
+
+    def merge(self, expr, data):
+        # workaround for and-concat of weqs
+        if len(data) == 1:
+            return data[0]
+        if 'non_matching' in data:
+            return 'non_matching'
         return data
+
+class VariableCountWEQ(ExprFun):
+    def __init__(self):
+        super().__init__('VariableWEQ', '0.0.1')
+
+    def apply (self, expr, data):
+        if expr.is_variable():
+            sort = expr.sort()
+            decl = str(expr.decl())
+            if len(data) == 0:
+                data+=[dict()]
+            for d in data:
+                if sort not in d:
+                    d[sort] = dict()
+                if decl not in d[sort]:
+                    d[sort][decl] = 0
+                d[sort][decl]+=1
+        return data
+
+    def merge(self, expr, data):
+        if expr.kind() == Kind.WEQ:
+            print(f'weq: {data}')
+        else:
+            print(data)
+        d_ret = data.pop(0) if len(data) > 0 else dict()
+        while len(data) > 0:
+            d_tmp = []
+            d_n = data.pop(0)
+            if len(d_ret) == 0:
+                d_tmp = d_n
+            elif len(d_n) == 0:
+                d_tmp = d_ret
+            else:
+                for d in d_ret:
+                    for dd in d_n:
+                        d_tmp += [self._mergeDicts(d, dd)]
+            d_ret = d_tmp
+        return d_ret
+
+    def _mergeDicts(self,d1,d2):
+        r_data = dict()
+        for k in set(d1.keys()).union(set(d2.keys())):
+            if k in d1 and k in d2:
+                if isinstance(d1[k],int):
+                    r_data[k] = d1[k]+d2[k]
+                else:
+                    r_data[k] = self._mergeDicts(d1[k],d2[k])
+            elif k in d2:
+                r_data[k] = d2[k] if isinstance(d2[k],int) else d2[k].copy()
+            elif k in d1:
+                r_data[k] = d1[k] if isinstance(d1[k],int) else d1[k].copy()
+        return r_data
+
 
 class HasAtom(ExprFun):
     def __init__(self):
