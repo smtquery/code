@@ -1,3 +1,5 @@
+from smtquery.utils.pattern import *
+
 from smtquery.smtcon.expr import *
 
 class ExprFun:
@@ -12,6 +14,187 @@ class ExprFun:
         return None
     def merge(self, expr, data):
         return None
+
+
+class Bounded(ExprFun):
+    def __init__(self):
+        super().__init__('Bounded', '0.1.0')
+
+    # data = [dict(),...]
+    def apply(self, expr, data):
+        if expr.kind() == Kind.WEQ:
+            v, c = None, None
+            for e in expr.children():
+                if e.is_variable():
+                    v = str(e)
+                elif e.is_const():
+                    c = len(str(e))-2
+            if v and c:
+                if len(data) == 0:
+                    data += [dict()]
+                for d in data:
+                    if 'weq' not in d:
+                        d['weq'] = dict()
+                    d['weq'][v] = (c, c)
+        elif expr.kind() == Kind.LENGTH_CONSTRAINT:
+            v, c = None, None
+            ci = 0
+            for i, e in enumerate(expr.children()):
+                if e.is_const():
+                    c = int(str(e))
+                    ci = i
+                elif e.kind() == Kind.OTHER:
+                    v = str(e.children()[0])
+            if v and c:
+                if len(data) == 0:
+                    data += [dict()]
+                for d in data:
+                    if 'lc' not in data:
+                        d['lc'] = dict()
+                    if (expr.decl() == '<' and ci == 1) or (expr.decl() == '>' and ci == 0):
+                        d['lc'][v] = (0, c-1)
+                    elif (expr.decl() == '>' and ci == 1) or (expr.decl() == '<' and ci == 0):
+                        d['lc'][v] = (c+1, float('inf'))
+                    elif (expr.decl() == '<=' and ci == 1) or (expr.decl() == '>=' and ci == 0):
+                        d['lc'][v] = (0, c)
+                    elif (expr.decl() == '>=' and ci == 1) or (expr.decl() == '<=' and ci == 0):
+                        d['lc'][v] = (c, float('inf'))
+                    elif expr.decl() == '=':
+                        d['lc'][v] = (c, c)
+        return data
+
+    def merge(self, expr, data):
+        # implement branching
+        if isinstance(expr, ExprRef) and expr.decl() == 'ite':
+            d_cond = data.pop(0)
+            d_ret = []
+            for dd in data.pop(0):
+                for d in d_cond:
+                    d_ret += [self._mergeDicts(d, dd)]
+            for dd in data.pop(0):
+                for d in self._negateDicts(d_cond):
+                    d_ret += [self._mergeDicts(d, dd)]
+            return d_ret
+        if isinstance(expr, ExprRef) and expr.decl() == 'or':
+            return [d for path in data for d in path]
+        # demorgan
+        if isinstance(expr, ExprRef) and expr.decl() == 'not':
+            return self._negateDicts(data[0])
+
+        d_ret = data.pop(0) if len(data) > 0 else dict()
+        while len(data) > 0:
+            d_tmp = []
+            d_n = data.pop(0)
+            if len(d_ret) == 0:
+                d_tmp = d_n
+            elif len(d_n) == 0:
+                d_tmp = d_ret
+            else:
+                for d in d_ret:
+                    for dd in d_n:
+                        d_tmp += [self._mergeDicts(d, dd)]
+            d_ret = d_tmp
+        return d_ret
+
+    def _mergeDicts(self, d1, d2):
+        print(f'in: {d1} and {d2}')
+        r_data = dict()
+        for k in set(d1.keys()).union(set(d2.keys())):
+            r_data[k] = dict()
+        for t in ['lc', 'weq']:
+            if t in set(d1.keys()).intersection(set(d2.keys())):
+                for k in set(d1[t].keys()).union(set(d2[t].keys())):
+                    if k in d1[t] and k in d2[t]:
+                        # check interval overlap
+                        l1, u1 = d1[t][k]
+                        l2, u2 = d2[t][k]
+                        if l1 <= u2 and l2 <= u1:
+                            r_data[t][k] = (max(l1, l2), min(u1,u2))
+                        else:
+                            # if no overlap then length constraint is unsat
+                            r_data[t][k] = (float('inf'), float('inf'))
+                    elif k in d2[t]:
+                        r_data[t][k] = d2[t][k]
+                    elif k in d1[t]:
+                        r_data[t][k] = d1[t][k]
+            elif t in d1.keys():
+                r_data[t] = d1[t]
+            elif t in d2.keys():
+                r_data[t] = d2[t]
+        print(f'out: {r_data}')
+        return r_data
+
+    # currently only single bound dicts can be negated
+    def _negateDicts(self, ds):
+        # pop ds and negate
+        # while ds not empty
+        # pop ds, negate and merge
+        d1 = ds.pop()
+        r_data = []
+        # length constraints from word equations are eliminated by negation
+        if 'weq' in d1.keys():
+            r_data += [{}]#r_data += [{'weq': {}}]
+        if 'lc' not in d1.keys():
+            return r_data
+        for k, v in d1['lc'].items():
+            l, u = v
+            if l != 0:
+                r_data += [{'lc': {k: (0, l-1)}}]
+            if u != float('inf'):
+                r_data += [{'lc': {k: (u+1, float('inf'))}}]
+            if l == 0 and u == float('inf'):
+                r_data += [{'lc': {k: (float('inf'), float('inf'))}}]
+        return r_data
+
+
+class PatternMatching(ExprFun):
+    def __init__(self):
+        super().__init__('PatternMatching', '0.0.2')
+
+    def apply(self, expr, data):
+        if data == 'non_matching':
+            return 'non_matching'
+        if expr.is_variable():
+            if isinstance(data, Pattern):
+                return Pattern(data.vs + [str(expr)])
+            return Variable(str(expr))
+        elif expr.is_const():
+            if isinstance(data, Pattern):
+                return Pattern(data.vs)
+            return Pattern([])
+        elif expr.kind() == Kind.WEQ:
+            v, vs = None, []
+            for d in data:
+                if isinstance(d, Variable):
+                    if v:
+                        vs += [d.v]
+                    else:
+                        v = d.v
+                elif isinstance(d, Pattern):
+                    vs = d.vs
+            if v is None or vs is None or v in vs:
+                return 'non_matching'
+            return Matching(v, vs)
+        elif expr.kind() == Kind.OTHER and expr.decl() == 'str.++':
+            vs = []
+            for d in data:
+                if isinstance(d, Variable):
+                    vs += [d.v]
+                elif isinstance(d, Pattern):
+                    vs += d.vs
+            return Pattern(vs)
+        elif expr.kind() == Kind.OTHER and expr.decl() == 'and':
+            return data
+        return 'non_matching'
+
+    def merge(self, expr, data):
+        # workaround for and-concat of weqs
+        if len(data) == 1:
+            return data[0]
+        if 'non_matching' in data:
+            return 'non_matching'
+        return data
+
 
 class HasAtom(ExprFun):
     def __init__(self):
