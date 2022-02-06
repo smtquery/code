@@ -127,20 +127,37 @@ class Interpreter:
         
     def visitSelect (self,node):
         instances = InstanceSelector().Select (node.getInstance ())
-        pred = CheckPredicate (node.getPredicate ())
         attriextractor = Attribute (node.getAttributes ())
-        for i in instances.enumerate ():
-            #print (i)
-            if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
-                attriextractor.Extract (i,self._push)
+
+        plain_pred = node.getPredicate ()
+        if plain_pred != None:
+            pred = CheckPredicate (plain_pred)
+            for i in instances.enumerate ():
+                #print (i)
+                if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
+                    attriextractor.Extract (i,self._push)
+        else:
+            for i in instances.enumerate ():
+                attriextractor.Extract (i,self._push)        
+
 
     def visitExtractNode (self,node):
         instances = InstanceSelector().Select (node.getInstances ())
-        pred = CheckPredicate (node.getPredicates ())
-        for i in instances.enumerate ():
-            #print (i)
-            if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
+        plain_pred = node.getPredicates ()
+        total_checked_instances = 0
+        if plain_pred != None:
+            pred = CheckPredicate (plain_pred)
+            for i in instances.enumerate ():
+                total_checked_instances+=1
+                if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
+                    node.getExtractFunc () (node.getApply  () (i))
+            node.getExtractFunc ().finalise(total_checked_instances)
+        else:
+            for i in instances.enumerate ():
+                total_checked_instances+=1
                 node.getExtractFunc () (node.getApply  () (i))
+            node.getExtractFunc ().finalise(total_checked_instances)
+
     
     
 

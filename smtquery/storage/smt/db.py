@@ -123,7 +123,7 @@ class DBFSStorage:
                                  sqlalchemy.Column ('model', sqlalchemy.Text),
                                  sqlalchemy.Column ('date', sqlalchemy.DateTime),
                                  )
-        self._makesmt = lambda name,filepath,id: smtquery.intel.manager.getIntel (SMTFile(name,filepath,id))
+        self._makesmt = lambda name,filepath,id: smtquery.intel.intels.getIntel (SMTFile(name,filepath,id))
 
         
     def initialise_db (self):
@@ -149,7 +149,7 @@ class DBFSStorage:
                                                                             bench_id = bench_id)).inserted_primary_key[0]
 
                     for instance in os.listdir (trackpath):
-                        if not instance.endswith (".smt"):
+                        if not (instance.endswith (".smt") or instance.endswith (".smt2") or instance.endswith (".smt25")):
                             continue
                         instancepath = os.path.join (trackpath,instance)
                         dbvalues = {"name": f"{bench}:{track}:{instance}",
@@ -162,7 +162,64 @@ class DBFSStorage:
                             path = instancepath,
                             track_id = track_id
                         )).inserted_primary_key[0]
-                    
+
+    def allocate_new_files_db (self):
+        with  smtquery.ui.output.makeProgressor () as progress:
+        
+            progress.message ("Adding new files to the Database")
+            self._meta.create_all (self._engine)
+            conn = self._engine.connect ()
+
+
+            for bench in os.listdir (self._root):
+                benchpath = os.path.join (self._root,bench)
+                if not os.path.isdir (benchpath):
+                    continue
+
+                # benchmark already added?
+                res = conn.execute (self._benchmark_table.select ().where ( self._benchmark_table.c.name == f"{bench}")).fetchall()
+                if len(res) > 0:
+                    bench_id = res[0][0]
+                else:
+                    bench_id = conn.execute (self._benchmark_table.insert ().values (name = bench)).inserted_primary_key[0]
+
+                for track in os.listdir (benchpath):
+                    trackpath = os.path.join (benchpath,track)
+                    if not os.path.isdir(trackpath):
+                        continue
+
+                    # track already added?
+                    res = conn.execute (self._tracks_table.select ().where ( self._tracks_table.c.name == f"{bench}:{track}")).fetchall()
+                    if len(res) > 0:
+                        track_id = res[0][0]
+                    else:
+                        track_id = conn.execute (self._tracks_table.insert ().values (name = f"{bench}:{track}",
+                                                                            bench_id = bench_id)).inserted_primary_key[0]
+
+
+                    for instance in os.listdir (trackpath):
+                        if not (instance.endswith (".smt") or instance.endswith (".smt2") or instance.endswith (".smt25")):
+                            continue
+
+                        # track already added?
+                        res = conn.execute (self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{instance}")).fetchall()
+                        if len(res) > 0:
+                            continue
+
+                        print(f"Not found {bench}:{track}:{instance}")
+
+                        instancepath = os.path.join (trackpath,instance)
+                        dbvalues = {"name": f"{bench}:{track}:{instance}",
+                                    "path": instancepath,
+                                    "track_id": track_id}
+                        progress.message (f"Adding to Database: {bench}:{track}:{instance}  ")
+                        
+                        id = conn.execute (self._instance_table.insert ().values (
+                            name = f"{bench}:{track}:{instance}",
+                            path = instancepath,
+                            track_id = track_id
+                        )).inserted_primary_key[0]
+
         
     def getBenchmarks (self):
         conn = self._engine.connect ()
@@ -181,8 +238,7 @@ class DBFSStorage:
         conn = self._engine.connect ()
         res = conn.execute (self._instance_table.select ())
         for row in res.fetchall ():
-            yield self._makesmt (row.name,row.path,row.id)
-        
+            yield self._makesmt (row.name,row.path,row.id)        
     
     def storeResult (self,result,smtfile,solver):
         conn = self._engine.connect ()
@@ -200,7 +256,7 @@ class DBFSStorage:
         
 
     def storagePredicates (self):
-        return smtquery.intel.manager.predicates ()
+        return smtquery.intel.intels.predicates ()
 
     def storageAttributes (self):
         return {
@@ -208,3 +264,18 @@ class DBFSStorage:
             "Hash" : lambda smtfile: smtfile.hashContent (),
             "Content" : lambda smtfile: smtfile.SMTString (),            
         }
+
+    # queries
+    def getResultsForBenchmarkId(self,id):
+        conn = self._engine.connect ()
+        res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id))
+        results = dict()
+        for row in res.fetchall ():
+            results[row.solver] = {"result" : row.result, "time" : row.time}
+        return results
+
+
+
+
+
+

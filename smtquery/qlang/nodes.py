@@ -148,6 +148,9 @@ class ExtractFunc (QNode):
 
     def __call__ (self,smtfile):
         return self._extractfunction (smtfile)
+
+    def finalise(self,total):
+        return self._extractfunction.finalise(total)
     
     def accept (self,visit):
         visit.visitExtractFunc (self)
@@ -219,7 +222,7 @@ class Or(QNode):
 
 class Not(QNode):
     def __init__(self,left):
-        super().__init__ ([left,right])
+        super().__init__ ([left])
 
     def accept (self,visit):
         visit.visitNot (self)

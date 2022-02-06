@@ -26,6 +26,7 @@ class ASTRef:
     intel = dict()
 
     def __init__(self):
+        self.intel = dict()
         self.intel["variables"] = dict()
         self.nodes = []
 
@@ -33,7 +34,7 @@ class ASTRef:
         expr.add_intel_with_function(self._intel_gatherVariables,self._intel_gatherVariables_merge,dict(),"variables")
         self.intel["variables"] = self._intel_gatherVariables_merge(self,[self.intel["variables"]]+[expr.get_intel()["variables"]])
         self.nodes+=[expr]
-
+        
     # f : Expr x Value -> Value
     def add_intel_with_function(self,f,m,neutral=0,key="test"):
         values = []
@@ -78,7 +79,7 @@ class ASTRef:
                 if k in d_new and k in d:
                     d_new[k].update(d[k])
                 elif k in d:
-                    d_new[k] = d[k]
+                    d_new[k] = d[k].copy()
                 else:
                     pass
         return d_new
@@ -189,6 +190,9 @@ class ExprRef:
 
     def get_intel(self):
         return self.intel
+
+    def reset_intel(self):
+        self.intel = dict()
 
     def __repr__(self):
         if self.is_const():

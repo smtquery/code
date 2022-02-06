@@ -14,10 +14,12 @@ class Outputter:
         return OutputLocator (path)
 
     def makeFile (self,name):
-        return open (os.path.join (self._root,name,'w'))
+        rel_filepath = self._root+''.join(f"/{f}" for f in name.split("/")[:-1])
+        os.makedirs(rel_filepath,exist_ok = True)
+        return open (self._root+"/"+name,'w')
 
     def makeBinaryFile (self,name):
-        return open (os.path.join (self._root,name,'bw'))
+        return open (os.path.join (self._root,name),'bw')
 
     def makeProgressor (self):
         return Progresss()

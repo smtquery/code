@@ -16,13 +16,12 @@ def run (arguments):
     interpreter = smtquery.qlang.interpreter.Interpreter ()
     query = input (">")
 
-    predicates  = {}
-    
-    predicates.update(smtquery.intel.manager.predicates ().items())
-    
+    predicates = {}
+    predicates.update (smtquery.intel.intels.predicates ())
+
     for name in smtquery.config.conf.getSolvers ().keys():
         predicates[f"isSAT({name})"] = smtquery.qlang.predicates.makeSatPredicate (name)
-
+    
         
     extract = smtquery.extract.extractors
     applyf = smtquery.apply.applys 

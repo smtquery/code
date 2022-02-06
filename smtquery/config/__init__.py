@@ -13,11 +13,13 @@ class Configuration:
     def __init__(self,
                  solvers,
                  storage,
-                 scheduler
+                 scheduler,
+                 runParameters
                  ):
         self._solvers = solvers
         self._storage = storage
         self._scheduler = scheduler
+        self._runParameters = runParameters
 
     def getSolvers (self):
         return self._solvers
@@ -27,6 +29,9 @@ class Configuration:
 
     def getScheduler (self):
         return self._scheduler
+
+    def getRunParameters (self):
+        return self._runParameters
 
 def createSolvers (solverdata):
     solverarr = {}
@@ -50,11 +55,11 @@ def createStorage (data):
         intels = []
         if "intels" in data:
             intels = data["intels"]
-        
+            
         storage = smtquery.storage.smt.db.DBFSStorage (data["root"],
-                                                       data["engine_string"],
-                                                       smtquery.intel.makeIntelManager (intels) 
+                                                       data["engine_string"]
         )
+        smtquery.intel.makeIntelManager (intels) 
 
     return storage
 
@@ -66,5 +71,6 @@ def readConfig (conffile):
     solverarr = createSolvers (data["solvers"])
     scheduler = createFrontScheduler (data["scheduler"])
     storage = createStorage (data["SMTStore"])
-    conf = Configuration (solverarr,storage,scheduler)
+    runParameters = data["runParameters"]
+    conf = Configuration (solverarr,storage,scheduler,runParameters)
     
