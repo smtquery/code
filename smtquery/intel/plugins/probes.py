@@ -16,6 +16,7 @@ class Probes:
         super().__init__ ()
         self._smtprobe = smtquery.smtcon.smt2expr.Z3SMTtoSExpr ()
         self._pickleBasePath = "smtquery/data/pickle"
+        self.use_cache = True
 
     def _storeAST(self,smtfile,ast):
         rel_filepath = ''.join(f"/{f}" for f in smtfile.getName().split(":")[:-1])
@@ -24,9 +25,9 @@ class Probes:
         with open(pickle_file_path, 'wb') as handle:
             pickle.dump(ast, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def getAST(self,smtfile,filepath,use_cache=True):
+    def getAST(self,smtfile,filepath):
         # for testing purpose
-        if not use_cache:
+        if not self.use_cache:
             return self._smtprobe.getAST (filepath)
 
         rel_filepath = ''.join(f"/{f}" for f in smtfile.getName().split(":")[:-1])
@@ -45,7 +46,8 @@ class Probes:
     def addIntel(self,smtfile,ast,plugin,neutral_element,name):
         if name not in ast.intel.keys():
             ast.add_intel_with_function(plugin.apply,plugin.merge,neutral_element,name)
-            self._storeAST(smtfile,ast)
+            if self.use_cache:
+                self._storeAST(smtfile,ast)
 
     def getIntel (self, smtfile):
         with tempfile.TemporaryDirectory () as tmpdir:

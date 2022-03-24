@@ -196,7 +196,6 @@ class DBFSStorage:
                         track_id = conn.execute (self._tracks_table.insert ().values (name = f"{bench}:{track}",
                                                                             bench_id = bench_id)).inserted_primary_key[0]
 
-
                     for instance in os.listdir (trackpath):
                         if not (instance.endswith (".smt") or instance.endswith (".smt2") or instance.endswith (".smt25")):
                             continue

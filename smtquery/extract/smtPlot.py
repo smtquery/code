@@ -7,11 +7,13 @@ class SMTPlot:
     colours = dict()
     plot_output_folder = "output/plots"
 
+    tmp_id = 0
+
     @staticmethod
     def getName ():
         return "SMTPlot"
 
-    def finalise(self,total): 
+    def finalise(self,total):
         pass
 
     def __call__  (self,smtfile):
