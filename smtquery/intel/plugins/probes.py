@@ -2,6 +2,7 @@
 import smtquery.smtcon.smt2expr
 import smtquery.smtcon.exprfun
 from smtquery.smtcon.expr import Kind
+from smtquery.smtcon.expr import Sort
 import smtquery.qlang.predicates
 import os
 import pickle
@@ -68,6 +69,7 @@ class Probes:
 
     def predicates (self):
         return {
+            "isQuadratic" : isQuadratic,
             "hasWEQ" : partial(hasKind,Kind.WEQ),
             "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
             "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT),
@@ -104,8 +106,14 @@ def hasConcatenationRegex(smtfile):
     else:
         return smtquery.qlang.predicates.Trool.FF
 
-
-
+def isQuadratic(smtfile,max_vars=2):
+    qudratic = True
+    for pv in [pv[Sort.String] for pv in smtfile.Probes.get_intel()["pathVars"] if Sort.String in pv]:
+        qudratic = qudratic and all([pv[var] <= max_vars for var in pv.keys()])
+    if qudratic:
+        return smtquery.qlang.predicates.Trool.TT
+    else:
+        return smtquery.qlang.predicates.Trool.FF
 
 def makePlugin ():
     return Probes
