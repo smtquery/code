@@ -1,7 +1,7 @@
-import smtquery.solvers.solver
+import smtquery.solvers.solver as solver
 import subprocess
 
-class Z3(solvers.solver.Solver):
+class Z3(solver.Solver):
     def __init__(self,binarypath,variation = "Str3",stringsolver ="z3str3"):
         super().__init__(binarypath)
         self._path = binarypath
@@ -12,7 +12,7 @@ class Z3(solvers.solver.Solver):
         return subprocess.check_output ([self._path,"--version"])
 
     def getName (self):
-        return "Z3"+variation
+        return "Z3"+self._variation
     
     def preprocessSMTFile  (self, origsmt, newsmt):
         with open(origsmt,'r') as orig, open(newsmt,'w') as new:
