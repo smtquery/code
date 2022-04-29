@@ -1,6 +1,5 @@
 import hashlib
 import itertools
-import math
 import smtquery.utils.pattern
 
 from smtquery.smtcon.expr import *
@@ -20,6 +19,9 @@ class ExprFun:
 
 
 class AssertTrue(ExprFun):
+    '''
+    Counts the occurence of (assert true (...)) patterns
+    '''
     def __init__(self):
         super().__init__('AssertTrue', '0.0.2')
 
@@ -33,11 +35,13 @@ class AssertTrue(ExprFun):
 
 
 class TerminalLengths(ExprFun):
+    '''
+    Inspects all terminal strings in a given benchmark and collects their lengths
+    '''
     def __init__(self):
         super().__init__('TerminalLengths', '0.0.1')
 
     def apply(self, expr, data):
-        print(expr)
         if expr.is_const() and expr.sort() == Sort.String:
             l = len(expr.params()[0])-2
             data += [l]
@@ -49,30 +53,11 @@ class TerminalLengths(ExprFun):
             d_new += d
         return d_new
 
-class HashConstraints(ExprFun):
-    def __init__(self):
-        super().__init__('HashConstraints', '0.0.1')
-
-    def apply(self, expr, data):
-        if expr.kind() != Kind.CONSTANT and expr.kind() != Kind.VARIABLE:
-            h = hashlib.md5(repr(expr).encode('utf-8')).hexdigest()
-            print(expr, h)
-            if h not in data:
-                data[h] = 0
-            data[h] += 1
-        return data
-
-    def merge(self, expr, data):
-        d_new = dict()
-        for d in data:
-            for k, v in d.items():
-                if k not in d_new:
-                    d_new[k] = 0
-                d_new[k] += v
-
-        return d_new
 
 class Bounded(ExprFun):
+    '''
+    Calculates lower and upper bounds of string variables based on length constraints and word equations
+    '''
     def __init__(self):
         super().__init__('Bounded', '0.1.0')
 
@@ -153,7 +138,7 @@ class Bounded(ExprFun):
         return data
 
     def merge(self, expr, data):
-        # implement branching
+        # branching
         if isinstance(expr, ExprRef) and expr.decl() == 'ite':
             d_cond = data.pop(0)
             d_ret = []
@@ -233,7 +218,6 @@ class Bounded(ExprFun):
             r_data['rel'] = d2['rel']
         return r_data
 
-    # currently only single bound dicts can be negated
     def _negateDicts(self, ds):
         r_data = []
         # negate every term
@@ -272,6 +256,9 @@ class Bounded(ExprFun):
 
 
 class Fragments(ExprFun):
+    '''
+    Returns the least restrictive fragment containing all given constraints in a benchmark
+    '''
 
     _q = {'forall', 'exists'}
     _lia = {'+', '-', '*', '>', '<', 'abs'}
@@ -307,6 +294,9 @@ class Fragments(ExprFun):
         return qf, mx
 
 class PatternMatching(ExprFun):
+    '''
+    Extracts occuring variables from pattern matching problems
+    '''
     def __init__(self):
         super().__init__('PatternMatching', '0.0.2')
 
@@ -328,23 +318,6 @@ class PatternMatching(ExprFun):
                 return 'non_matching'
             else:
                 return [l,r]
-            # old
-            '''
-            v, vs = None, None
-            for d in data:
-                if isinstance(d, utils.Variable):
-                    if v and vs:
-                        vs += [d.v]
-                    elif v:
-                        vs = [d.v]
-                    else:
-                        v = d.v
-                elif isinstance(d, utils.Pattern):
-                    vs = d.vs
-            if v is None or vs is None or v in vs:
-                return 'non_matching'
-            return utils.Matching(v, vs)
-            '''
         elif expr.kind() == Kind.OTHER and expr.decl() == 'str.++':
             vs = []
             for d in data:
@@ -358,14 +331,12 @@ class PatternMatching(ExprFun):
         return 'non_matching'
 
     def merge(self, expr, data):
-        # workaround for and-concat of weqs
-        #if len(data) == 1:
-        #    return data[0]
-        # if 'non_matching' in data:
-        #     return 'non_matching'
         return data
 
 class RegExLengths(ExprFun):
+    '''
+    Collects the length of given regex constraints, proportional to their written form
+    '''
     def __init__(self):
         super().__init__('RegExLengths', '0.0.1')
 
@@ -394,16 +365,6 @@ class RegExLengths(ExprFun):
             elif expr.decl() == 're.inter':
                 return sum(data)
         return list(filter(lambda e: e != [] and e != 0, data))
-
-class Degree(ExprFun):
-    def __init__(self):
-        super().__init__('Degree', '0.0.1')
-
-    def apply(self, expr, data):
-        pass
-
-    def merge(self, expr, data):
-        pass
 
 class HasAtom(ExprFun):
     def __init__(self):
