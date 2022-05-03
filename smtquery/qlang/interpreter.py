@@ -41,7 +41,7 @@ class InstanceSelector:
         for bb in storage.getBenchmarks ():
             if node.getBenchmark () == bb.getName ():
                 self._res = bb.filesInBenchmark ()
-
+    
     def visitAllInstances (self,node):
         storage = smtquery.config.conf.getStorage ()
         self._res = storage.allFiles ()

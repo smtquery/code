@@ -76,11 +76,8 @@ class Benchmark:
             yield Track (row.name,self._engine,row.id,self._instancetable,self._makesmt)
             
     def filesInBenchmark (self):
-        conn = self._engine.connect ()
-        res = conn.execute (self._instancetable.select().where (self._instancetable.c.track_id == self._id))
-        for row in res.fetchall ():
-             t = Track (row.name,self._engine,row.id,self._instancetable,self._makesmt)
-             yield from t.filesInTrack ()
+        for track in self.tracksInBenchmark():
+            yield from track.filesInTrack ()
         
     def getName (self):
         return self._name
