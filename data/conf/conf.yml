@@ -1,10 +1,10 @@
 solvers:
   Z3Str3:
-    binary: /usr/bin/z3
+    binary: /usr/local/bin/z3
   Z3Seq:
-    binary: /usr/bin/z3
+    binary: /usr/local/bin/z3
   CVC4:
-    binary: /usr/bin/cvc4 
+    binary: /usr/local/bin/cvc4 
 
 runParameters:
   timeout : 5

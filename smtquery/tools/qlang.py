@@ -6,6 +6,8 @@ import smtquery.extract
 import smtquery.apply
 import smtquery.ui
 
+from itertools import product
+
 def getName ():
     return "qlang"
 
@@ -22,6 +24,8 @@ def run (arguments):
     for name in smtquery.config.conf.getSolvers ().keys():
         predicates[f"isSAT({name})"] = smtquery.qlang.predicates.makeSatPredicate (name)
     
+    for s1,s2 in product(smtquery.config.conf.getSolvers ().keys(),smtquery.config.conf.getSolvers ().keys()):
+        predicates[f"isFaster({s1},{s2})"] = smtquery.qlang.predicates.makeFasterPredicate (s1,s2)
         
     extract = smtquery.extract.extractors
     applyf = smtquery.apply.applys 
