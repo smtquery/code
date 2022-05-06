@@ -120,6 +120,14 @@ class DBFSStorage:
                                  sqlalchemy.Column ('model', sqlalchemy.Text),
                                  sqlalchemy.Column ('date', sqlalchemy.DateTime),
                                  )
+
+        self._validated_table = sqlalchemy.Table ('valdidated_results', self._meta,
+                                 sqlalchemy.Column ('id',sqlalchemy.Integer,primary_key = True),
+                                 sqlalchemy.Column ('verification_result_id',sqlalchemy.Integer,sqlalchemy.ForeignKey('verification_result.id'),nullable=False),
+                                 sqlalchemy.Column ('result',sqlalchemy.Enum(smtquery.solvers.solver.Verified),nullable=False),
+                                 sqlalchemy.Column ('date', sqlalchemy.DateTime),
+                                 )
+
         self._makesmt = lambda name,filepath,id: smtquery.intel.intels.getIntel (SMTFile(name,filepath,id))
 
         
@@ -246,10 +254,16 @@ class DBFSStorage:
             model = result.getModel (),
             date = datetime.datetime.now ()
         )
-
-        
         conn.execute (query)
-        
+
+    def storeVerified (self,result,verified):
+        conn = self._engine.connect ()
+        query = self._validated_table.insert().values (
+            verification_result_id = result["r_id"],
+            result = verified,
+            date = datetime.datetime.now ()
+        )    
+        conn.execute (query)
 
     def storagePredicates (self):
         return smtquery.intel.intels.predicates ()
@@ -267,7 +281,7 @@ class DBFSStorage:
         res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id))
         results = dict()
         for row in res.fetchall ():
-            results[row.solver] = {"result" : row.result, "time" : row.time}
+            results[row.solver] = {"r_id" : row.id, "result" : row.result, "time" : row.time, "model" : row.model}
         return results
 
 

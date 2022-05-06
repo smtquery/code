@@ -25,6 +25,12 @@ class Result(enum.Enum):
     TimeOut = 3
     ErrorTermination = 4
 
+class Verified(enum.Enum):
+    VerifiedSAT = 0
+    Majority  = 1
+    InvalidModel = 2
+    Unverified = 4
+
 class VerificationResult:
     def __init__ (self,result: Result,
                   time_in_seconds: float,
@@ -74,6 +80,21 @@ class Solver:
     def buildCMDList (self,smtfilepath):
         return ["echo", smtfilepath]
     
+    def _runSolverBackend(self,usepath,timeout):
+        verresult = None
+        timer = Timer ()
+        try:
+            with timer:
+                stdout = subprocess.check_output ( self.buildCMDList (usepath),timeout = timeout)
+        except subprocess.CalledProcessError as cer:
+            logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for {smtpath}")
+            verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
+        except subprocess.TimeoutExpired:
+            verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
+        if verresult == None:
+            verresult =  self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
+        return verresult
+
 
     def runSolver (self,smtfile,timeout = None,store = None)->VerificationResult:
         verresult = None
@@ -96,4 +117,24 @@ class Solver:
             if store != None:
                 print ("Store result")
                 store.storeResult (verresult,smtfile,self)
+            return verresult
+
+    def runSolverOnText(self,text,timeout = None):
+        verresult = None
+        with tempfile.TemporaryDirectory () as tmpdir:
+            usepath = os.path.join (tmpdir,"input.smt")
+            with open(usepath, 'w') as f:
+                f.write(text)
+            
+            timer = Timer ()
+            try:
+                with timer:
+                    stdout = subprocess.check_output ( self.buildCMDList (usepath),timeout = timeout)
+            except subprocess.CalledProcessError as cer:
+                logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for input-textfile (verification)!")
+                verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
+            except subprocess.TimeoutExpired:
+                verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
+            if verresult == None:
+                verresult =  self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
             return verresult

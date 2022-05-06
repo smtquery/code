@@ -15,6 +15,10 @@ class Queue:
         resfunc = functools.partial (callback,func,smtfile)
         return self._pool.apply_async (func.runSolver,(smtfile,timeout),callback = resfunc)
 
+    def runSolverOnText (self,func,text,timeout):
+        resfunc = functools.partial (callback,func,text)
+        return self._pool.apply_async (func.runSolverOnText,(text,timeout))
+
     def interpretSolverRes (self,res):
         return res.get ()
     

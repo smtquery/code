@@ -1,9 +1,122 @@
 import smtquery.config
 import smtquery.solvers.solver
-
 import re
-
 from smtquery.qlang.trool import *
+
+
+class SolverInteraction:
+    def __init__(self):
+        self._solvers = smtquery.config.conf.getSolvers ()
+        self._schedule = smtquery.config.conf.getScheduler ()
+        self._run_parameters = smtquery.config.conf.getRunParameters ()
+        self._storage = smtquery.config.conf.getStorage ()
+        self._verifiers = smtquery.config.conf.getVerifiers ()
+        self._file_root = smtquery.config.conf.getSMTFilePath ()
+
+    def getResultForSolver (self,smtfile,solvername):
+        return self.getResultsForInstance(smtfile)[solvername]
+
+    def _fetchResultsForInstance(self,smtfile):
+        # try using the database
+        b_input = smtfile.getName().split(":")
+        b_smtfile = self._storage.searchFile(b_input[0],b_input[1],b_input[2])
+        if b_smtfile != None:
+            b_id = b_smtfile.getId() 
+            res = self._storage.getResultsForBenchmarkId(b_id)
+            # make sure results are available for all solvers
+            if set(res.keys()) == set(self._solvers.keys()):
+                return res
+            # fall back
+            ll = []
+            for key,solver in self._solvers.items ():
+                res = self._schedule.runSolver (solver,smtfile,self._run_parameters["timeout"])
+                ll.append (res)                
+            for r in ll:
+                r.wait ()
+                res = self._schedule.interpretSolverRes (r)
+                self._storage.storeResult (res,smtfile,solver)
+            return self._storage.getResultsForBenchmarkId(b_id)
+        return dict()
+
+    def getResultsForInstance(self,smtfile):
+        results = self._fetchResultsForInstance(smtfile)
+
+        # use db for verified too
+        # cvc4 as verifier fails sometimes due to smtlib 2.6 ouput!
+        #v_res = self._verifyResults(smtfile,results)
+        return results
+
+    def _verifyResults(self,smtfile,results):
+        r_values = {True: 0, False: 0}
+        verified_once = False
+
+        for s,r in results.items():
+            if r["result"] == smtquery.solvers.solver.Result.Satisfied:
+                model_verified = self._verifyModel(smtfile,r)
+                r_values[True]+=1
+                if model_verified:
+                    verified_once = True
+                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.VerifiedSAT)
+                else: 
+                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.InvalidModel)
+            elif r["result"] == smtquery.solvers.solver.Result.NotSatisfied:
+                r_values[False]+=1
+                if verified_once:
+                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Unverified)
+        
+        # majority vote
+        majority = None
+        if not verified_once:
+            if r_values[True] > r_values[False]:
+                majority = smtquery.solvers.solver.Result.Satisfied
+            elif r_values[True] < r_values[False]:
+                majority = smtquery.solvers.solver.Result.NotSatisfied
+            for s,r in results.items():
+                if r["result"] == majority:
+                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Majority)
+                else:
+                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Unverified)
+
+        return verified_once or majority
+
+
+    def _verifyModel(self,smtfile,result):
+        if result["result"] == smtquery.solvers.solver.Result.Satisfied:
+            return self._isValidModel(smtfile,result["model"])
+        return False
+
+    ## verification
+    def _isValidModel(self,smtfile,model):
+        model = self._extractAssignment(model)
+        smt_file_path = f'{self._file_root}' + ''.join(f"/{f}" for f in smtfile.getName().split(":"))
+        ast = smtquery.smtcon.smt2expr.Z3SMTtoSExpr().getAST(smt_file_path)
+        smt_ver_text = f"{ast._getPPSMTHeader()}\n{model}\n{ast._getPPAsserts()}\n{ast._getPPSMTFooter()}"
+        ll = []
+        verifier_results = []
+        for key,verifier in self._verifiers.items():
+                t_res = self._schedule.runSolverOnText(verifier,smt_ver_text,self._run_parameters["timeout"])
+                ll.append (t_res)                
+        for r in ll:
+            r.wait ()
+            t_res = self._schedule.interpretSolverRes (r)
+            verifier_results+=[True if t_res.getResult() == smtquery.solvers.solver.Result.Satisfied else False]
+
+        # a least on verfier has to validate the model
+        return any(verifier_results)
+
+    def _extractAssignment(self,model):
+        s = ""
+        for l in model:
+            s+=l.rstrip("\n")
+        if s.startswith("(model"):
+            return s[len("(model"):-1]
+        elif s.startswith("sat("):
+            return s[len("sat("):-1]
+        else:
+            return s[len("("):-1]
+
+    ## SolverInteraction needs a better PLACE!
+    
 
 def hasWordRegex (smtfile):
     if smtfile.OldProbes['regex'] > 0:
@@ -12,69 +125,20 @@ def hasWordRegex (smtfile):
         return Trool.FF
 
 def isSat (smtfile,solvername):
-    solver = smtquery.config.conf.getSolvers ()[solvername]
-    schedule = smtquery.config.conf.getScheduler ()
-    run_parameters = smtquery.config.conf.getRunParameters ()
-    storage = smtquery.config.conf.getStorage ()
-    
-    # try using the database
-    b_input = smtfile.getName().split(":")
-    b_smtfile = storage.searchFile(b_input[0],b_input[1],b_input[2])
-    if b_smtfile != None:
-        b_id = b_smtfile.getId() 
-        res = storage.getResultsForBenchmarkId(b_id)
-        if solvername in res:
-            if res[solvername]["result"] == smtquery.solvers.solver.Result.Satisfied:
-                return Trool.TT
-            else:
-                return Trool.FF 
-
-    # fall back
-    res = schedule.runSolver (solver,smtfile,run_parameters["timeout"])
-    res.wait ()
-    res = schedule.interpretSolverRes (res)
-
-    if res.getResult () == smtquery.solvers.solver.Result.Satisfied:
+    si = SolverInteraction()
+    if si.getResultForSolver(smtfile,solvername)["result"] == smtquery.solvers.solver.Result.Satisfied:
         return Trool.TT
     else:
         return Trool.FF
 
 # returns true if both solvers agree on a result and solver1 is faster than the other
 def isFaster (smtfile,solver1,solver2):
-    solvers = [smtquery.config.conf.getSolvers ()[solver1],smtquery.config.conf.getSolvers ()[solver2]]
-    schedule = smtquery.config.conf.getScheduler ()
-    run_parameters = smtquery.config.conf.getRunParameters ()
-    storage = smtquery.config.conf.getStorage ()
-    
-    b_input = smtfile.getName().split(":")
-    b_smtfile = storage.searchFile(b_input[0],b_input[1],b_input[2])
-    results = []
-    times = []
-
-    for s in solvers:
-        c_result = None
-        c_time = None
-        # try using the database
-        if b_smtfile != None:
-            b_id = b_smtfile.getId() 
-            res = storage.getResultsForBenchmarkId(b_id)
-            if s.getName()  in res:
-                c_result = res[s.getName()]["result"]
-                c_time = res[s.getName()]["time"]
-        # fall back          
-        if c_result == None and c_time == None:
-            res = schedule.runSolver (s,smtfile,run_parameters["timeout"])
-            res.wait ()
-            res = schedule.interpretSolverRes (res)
-            storage.storeResult (res,smtfile,s)
-            c_result = res.getResult ()
-            c_time = res.getTime ()
-        results+=[c_result]
-        times+=[c_time]
+    si = SolverInteraction()
+    res = si.getResultsForInstance(smtfile)
 
     # compare results
     validResults = set({smtquery.solvers.solver.Result.Satisfied,smtquery.solvers.solver.Result.NotSatisfied})
-    if (results[0] == results[1] and times[0] <= times[1]) or (results[0] in validResults and results[1] not in validResults):
+    if (res[solver1]["result"] == res[solver2]["result"] and res[solver1]["time"] <= res[solver2]["time"]) or (res[solver1]["result"] in validResults and res[solver2]["result"] not in validResults):
         return Trool.TT
     else:
         return Trool.FF

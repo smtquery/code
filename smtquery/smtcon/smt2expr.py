@@ -26,8 +26,16 @@ class Z3SMTtoSExpr(SMTtoSExpr):
     def getZ3AST(self,file_path):
         return z3.parse_smt2_file(file_path)
 
+    def getZ3ASTFromText(self,text):
+        return z3.parse_smt2_string(text)
+
+    def getASTFromText(self,text):
+        return self._buildAST(self.getZ3ASTFromText(text))   
+
     def getAST(self,file_path):
-        z3ast = self.getZ3AST(file_path)
+        return self._buildAST(self.getZ3AST(file_path))
+
+    def _buildAST(self,z3ast):
         ast = ASTRef()
         node_id = [0] # list to pass it as reference
         if type(z3ast) in [z3.z3.AstVector]:

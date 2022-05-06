@@ -33,7 +33,7 @@ class CVC4(solver.Solver):
                 if "(set-logic" in l:
                     l = re.sub('\(set-logic.*?\)', '(set-logic QF_SLIA)', l)
                 new.write(l)
-            new.write("\n(check-sat)\n(get-model)")        
+            new.write("\n(check-sat)")        
 
     def buildCMDList (self,smtfilepath):
         return [self._path,"--lang","smtlib2.5","-m","--no-interactive-prompt","--strings-exp","--dump-models",smtfilepath]

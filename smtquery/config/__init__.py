@@ -15,13 +15,15 @@ class Configuration:
                  storage,
                  scheduler,
                  runParameters,
-                 verifiers
+                 verifiers,
+                 filepath,
                  ):
         self._solvers = solvers
         self._storage = storage
         self._scheduler = scheduler
         self._runParameters = runParameters
         self._verifiers = verifiers
+        self._filepath = filepath
 
     def getSolvers (self):
         return self._solvers
@@ -37,6 +39,9 @@ class Configuration:
 
     def getRunParameters (self):
         return self._runParameters
+
+    def getSMTFilePath(self):
+        return self._filepath
 
 def createSolvers (solverdata):
     solverarr = {}
@@ -78,5 +83,6 @@ def readConfig (conffile):
     storage = createStorage (data["SMTStore"])
     runParameters = data["runParameters"]
     verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
-    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers)
+    filepath = data["SMTStore"]["root"]
+    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath)
     
