@@ -6,6 +6,8 @@ solvers:
   CVC4:
     binary: /usr/local/bin/cvc4 
 
+verifiers: [CVC4]
+
 runParameters:
   timeout : 5
 

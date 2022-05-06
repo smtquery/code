@@ -14,15 +14,20 @@ class Configuration:
                  solvers,
                  storage,
                  scheduler,
-                 runParameters
+                 runParameters,
+                 verifiers
                  ):
         self._solvers = solvers
         self._storage = storage
         self._scheduler = scheduler
         self._runParameters = runParameters
+        self._verifiers = verifiers
 
     def getSolvers (self):
         return self._solvers
+
+    def getVerifiers (self):
+        return self._verifiers
 
     def getStorage (self):
         return self._storage
@@ -72,5 +77,6 @@ def readConfig (conffile):
     scheduler = createFrontScheduler (data["scheduler"])
     storage = createStorage (data["SMTStore"])
     runParameters = data["runParameters"]
-    conf = Configuration (solverarr,storage,scheduler,runParameters)
+    verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
+    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers)
     
