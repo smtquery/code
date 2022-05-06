@@ -63,7 +63,6 @@ def isFaster (smtfile,solver1,solver2):
                 c_time = res[s.getName()]["time"]
         # fall back          
         if c_result == None and c_time == None:
-            print("X")
             res = schedule.runSolver (s,smtfile,run_parameters["timeout"])
             res.wait ()
             res = schedule.interpretSolverRes (res)

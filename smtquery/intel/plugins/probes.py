@@ -56,7 +56,6 @@ class Probes:
             pr = self.getAST(smtfile,filepath)
             for (name,c) in self.intels().items():
                 self.addIntel(smtfile,pr,c[0],c[1],name)
-            #print(smtfile.getName(),pr.intel["regex"])
             return pr
 
     def intels (self):
@@ -108,6 +107,16 @@ def hasConcatenationRegex(smtfile):
 
 def isQuadratic(smtfile,max_vars=2):
     qudratic = True
+
+    """
+    # check quadtratic without repecting the paths
+    vcs = smtfile.Probes.get_intel()["#variables"]
+    if Sort.String in vcs:
+        if not all([vcs[Sort.String][var] <= max_vars for var in vcs[Sort.String].keys()]):
+            return smtquery.qlang.predicates.Trool.FF
+    return smtquery.qlang.predicates.Trool.TT
+    """
+
     for pv in [pv[Sort.String] for pv in smtfile.Probes.get_intel()["pathVars"] if Sort.String in pv]:
         qudratic = qudratic and all([pv[var] <= max_vars for var in pv.keys()])
     if qudratic:

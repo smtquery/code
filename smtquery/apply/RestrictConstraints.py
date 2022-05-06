@@ -31,6 +31,7 @@ class RestrictConstraints:
             handle.write(str(new_ast))
         new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(),self.root+"/"+self._getOutputFilePath(smtfile))
         smtquery.intel.intels.getIntel(new_smtfile)
+        
         return new_smtfile
     
     def _processWEQ(self,expr):
@@ -64,7 +65,10 @@ class RestrictConstraints:
                 if len(kid) >= 1:
                     new_kids+=kid 
             elif c.kind() == Kind.OTHER and c.sort() == Sort.Bool:
-                new_kids+=self._processBool(c,collect_kinds)         
+                new_kids+=self._processBool(c,collect_kinds)
+            # special case for the condition of ite
+            elif expr.decl() == "ite" and expr.children()[0] == c and c.sort() == Sort.Bool:
+                new_kids+=[c]     
         if new_kids == None or len(new_kids) == 0:
             return []
         elif len(new_kids) == 1:

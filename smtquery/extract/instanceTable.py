@@ -14,7 +14,6 @@ class InstanceTable:
             headers = ["Instance"]
             for s in self._results[list(self._results.keys())[0]].keys():
                 headers+=[f"Result {s}",f"Time {s}"]
-            print(headers)
             rows = []
             for i in self._results.keys():
                 c_row = [i]
