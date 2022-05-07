@@ -278,10 +278,17 @@ class DBFSStorage:
     # queries
     def getResultsForBenchmarkId(self,id):
         conn = self._engine.connect ()
-        res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id))
+        res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id).order_by(self._result_table.c.date.desc()))
         results = dict()
         for row in res.fetchall ():
-            results[row.solver] = {"r_id" : row.id, "result" : row.result, "time" : row.time, "model" : row.model}
+            # fetch verified
+            verified = None
+            v_res = conn.execute (self._validated_table.select ().where ( self._validated_table.c.verification_result_id == row.id).order_by(self._validated_table.c.date.desc()))
+            v_results = v_res.fetchall()
+            if len(v_results) > 0:
+                verified = v_results[0].result
+            results[row.solver] = {"r_id" : row.id, "result" : row.result, "time" : row.time, "model" : row.model, "verified": verified}
+
         return results
 
 

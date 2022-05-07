@@ -41,17 +41,21 @@ class SolverInteraction:
     def getResultsForInstance(self,smtfile):
         results = self._fetchResultsForInstance(smtfile)
 
-        # use db for verified too
+        # check if all results are verified
+        if any(True if x["verified"] == None else False for x in results.values()):
+            v_res = self._verifyResults(smtfile,results)
+
         # cvc4 as verifier fails sometimes due to smtlib 2.6 ouput!
-        #v_res = self._verifyResults(smtfile,results)
         return results
 
     def _verifyResults(self,smtfile,results):
         r_values = {True: 0, False: 0}
         verified_once = False
+        already_set = set()
 
         for s,r in results.items():
             if r["result"] == smtquery.solvers.solver.Result.Satisfied:
+                already_set.add(s)
                 model_verified = self._verifyModel(smtfile,r)
                 r_values[True]+=1
                 if model_verified:
@@ -62,7 +66,14 @@ class SolverInteraction:
             elif r["result"] == smtquery.solvers.solver.Result.NotSatisfied:
                 r_values[False]+=1
                 if verified_once:
-                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Unverified)
+                    already_set.add(s)
+                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.SoundnessIssue)
+        if verified_once:
+            for s in set(results.keys()).difference(already_set):
+                if results[s]["result"] == smtquery.solvers.solver.Result.NotSatisfied:
+                    self._storage.storeVerified (results[s],smtquery.solvers.solver.Verified.SoundnessIssue)
+                else: 
+                    self._storage.storeVerified (results[s],smtquery.solvers.solver.Verified.Unverified)
         
         # majority vote
         majority = None
@@ -76,7 +87,6 @@ class SolverInteraction:
                     self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Majority)
                 else:
                     self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Unverified)
-
         return verified_once or majority
 
 

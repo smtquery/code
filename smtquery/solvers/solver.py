@@ -29,7 +29,8 @@ class Verified(enum.Enum):
     VerifiedSAT = 0
     Majority  = 1
     InvalidModel = 2
-    Unverified = 4
+    SoundnessIssue = 4
+    Unverified = 5
 
 class VerificationResult:
     def __init__ (self,result: Result,
