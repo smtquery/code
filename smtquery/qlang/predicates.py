@@ -141,6 +141,13 @@ def isSat (smtfile,solvername):
     else:
         return Trool.FF
 
+def hasValidModel (smtfile,solvername):
+    si = SolverInteraction()
+    if si.getResultForSolver(smtfile,solvername)["verified"] == smtquery.solvers.solver.Verified.VerifiedSAT:
+        return Trool.TT
+    else:
+        return Trool.FF
+
 # returns true if both solvers agree on a result and solver1 is faster than the other
 def isFaster (smtfile,solver1,solver2):
     si = SolverInteraction()
@@ -156,6 +163,11 @@ def isFaster (smtfile,solver1,solver2):
 def makeSatPredicate (solvername):
     def predicate (smtfile):
         return isSat (smtfile,solvername)
+    return predicate
+
+def makeValidModelPredicate (solvername):
+    def predicate (smtfile):
+        return hasValidModel (smtfile,solvername)
     return predicate
 
 def makeFasterPredicate (solver1,solver2):
