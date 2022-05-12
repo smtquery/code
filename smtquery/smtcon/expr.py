@@ -228,8 +228,6 @@ class ReExpr(ExprRef):
 class IntExpr(ExprRef):
     vSort = Sort.Int
 
-
-
 def print_expr(expr):
     passed,cb = _build_aux_string(expr)
     waiting = expr.vChildren

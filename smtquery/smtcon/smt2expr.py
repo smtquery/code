@@ -66,10 +66,68 @@ class Z3SMTtoSExpr(SMTtoSExpr):
         else:
             return Kind.OTHER
 
-
     def translateExpr(self,expr,node_id_ref):
+        node_id = node_id_ref[0]
+        passed = dict()
+        tree = dict()
+
+        node_id+=1
+        root = node_id
+        waiting = [(expr,node_id)]
+
+        while len(waiting) > 0:
+            e,t_id = waiting.pop(0)
+            tree[t_id] = []
+            passed[t_id] = self._prepareExpr(e,t_id)
+            for c in e.children():
+                node_id+=1
+                waiting+=[(c,node_id)]
+                tree[t_id]+=[node_id]
+
+        # rebuild tree
+        node_id_ref = [node_id]
+        processed = set({root})
+        while processed != set(tree.keys()):
+            for i in set(j for j in tree.keys() if len(tree[j]) == 0):
+                processed.add(i)
+                for ii in set(j for j in tree.keys() if i in tree[j]):
+                    tree[ii].remove(i)
+                    passed[ii].vChildren+=[passed[i]]
+        return passed[root]
+
+    def _prepareExpr(self,expr,node_id):
         sort = self.getSort(expr.sort())
-        children = [self.translateExpr(c,node_id_ref) for c in expr.children()]
+        is_variable = z3.is_const(expr) and expr.decl().kind() == z3.Z3_OP_UNINTERPRETED
+        is_const = not is_variable and len(expr.children()) == 0
+        op = self._extractOpName(expr.decl())
+        kind = self._determineKind(expr,is_variable,is_const)
+        empty_children = []
+
+        if is_const:
+            params = [expr.sexpr()]
+        else:
+            params = expr.params()
+
+        if type(expr) == z3.z3.SeqRef:
+            return StringExpr(empty_children,params,str(op),kind,dict(),node_id)  
+        elif type(expr) == z3.z3.BoolRef:
+            return BoolExpr(empty_children,params,str(op),kind,dict(),node_id)
+        elif type(expr) == z3.z3.ReRef:
+            return ReExpr(empty_children,params,str(op),kind,dict(),node_id)
+        elif type(expr) == z3.z3.ArithRef:
+            return IntExpr(empty_children,params,str(op),kind,dict(),node_id)
+        elif type(expr) == z3.z3.IntNumRef:
+            return IntExpr(empty_children,params,str(op),kind,dict(),node_id)
+
+
+        # Fall back
+        return ExprRef(empty_children,[],str(op),kind,dict(),node_id) 
+
+
+
+    def translateExprRec(self,expr,node_id_ref):
+        sort = self.getSort(expr.sort())
+        children = [self.translateExprRec(c,node_id_ref) for c in expr.children()]
         node_id_ref[0] = node_id_ref[0]+1
         is_variable = z3.is_const(expr) and expr.decl().kind() == z3.Z3_OP_UNINTERPRETED
         is_const = not is_variable and len(children) == 0
