@@ -38,9 +38,6 @@ def run (arguments):
     
         
     node = parser.parse (query)
-
-
-               
                
 
     interpreter.Run (node,print)

@@ -54,6 +54,14 @@ class Probes:
         with tempfile.TemporaryDirectory () as tmpdir:
             filepath = smtfile.copyOutSMTFile (tmpdir)
             pr = self.getAST(smtfile,filepath)
+
+            print("========")
+            print(pr)
+            print("--------")
+            for e in pr:
+                smtquery.smtcon.expr.print_expr(e)
+            print("--------")
+
             for (name,c) in self.intels().items():
                 self.addIntel(smtfile,pr,c[0],c[1],name)
             return pr

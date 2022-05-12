@@ -3,6 +3,9 @@ if __name__ == "__main__":
     import smtquery.config
     import smtquery.storage.smt.fs
     import smtquery.tools
+    import sys
+    sys.setrecursionlimit(3000)
+
 
     parser = argparse.ArgumentParser()
     parser.add_argument ('--confloc',dest="conf",type=str,default="./data/conf")

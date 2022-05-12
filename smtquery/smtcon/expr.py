@@ -142,6 +142,8 @@ class ExprRef:
     # additional data
     intel = None
 
+    lol = 0
+
     def __init__(self,children,params,decl,kind,intel,node_id):
         self.vChildren = children
         self.vParams = params
@@ -195,6 +197,8 @@ class ExprRef:
         self.intel = dict()
 
     def __repr__(self):
+        return print_expr(self)
+        """
         if self.is_const():
             return ''.join(f"{s}" for s in self.vParams)
         else:
@@ -207,6 +211,7 @@ class ExprRef:
             r_str+=''.join([f"{c} " for c in self.vChildren])[:-1]
             r_str+=")"
             return r_str
+        """
 
     def __eq__(self,other):
         return self.vChildren == other.vChildren and self.vParams == other.vParams and self.vDecl == other.vDecl and self.vSort == other.vSort
@@ -222,3 +227,49 @@ class ReExpr(ExprRef):
 
 class IntExpr(ExprRef):
     vSort = Sort.Int
+
+
+
+def print_expr(expr):
+    passed,cb = _build_aux_string(expr)
+    waiting = expr.vChildren
+    cbs = []
+    if cb:
+        cbs=[len(expr.vChildren)]
+
+    while len(waiting) > 0:
+        c = waiting.pop(0)
+        cbs=[cbs[i]-1 for i in range(len(cbs))]
+        pn,cb=_build_aux_string(c)
+        passed+=pn
+        if cb:
+            cbs=[(cbs[i]+len(c.vChildren)) for i in range(len(cbs))]
+        for i in cbs:
+            if i == 0:
+                passed+=")"
+        cbs = [i for i in cbs if i != 0]
+        if cb:
+            cbs+=[len(c.vChildren)]
+        waiting=c.vChildren+waiting
+    return passed + "".join([")" for i in cbs])
+
+def _build_aux_string(expr):
+    r_str = ""
+    if expr.is_const():
+        return ''.join(f"{s} " for s in expr.vParams),False
+    else:
+        if len(expr.vChildren) == 0:
+            return f" {expr.vDecl} ",False
+        if len(expr.vParams) > 0:
+            r_str=f"((_ {expr.vDecl}"+''.join([f" {p}" for p in expr.vParams])+") "
+        else:
+            r_str = f"({expr.vDecl} ",True
+        return r_str
+
+
+
+
+
+
+
+
