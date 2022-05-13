@@ -141,9 +141,23 @@ def isSat (smtfile,solvername):
     else:
         return Trool.FF
 
+def isUnSat (smtfile,solvername):
+    si = SolverInteraction()
+    if si.getResultForSolver(smtfile,solvername)["result"] == smtquery.solvers.solver.Result.NotSatisfied:
+        return Trool.TT
+    else:
+        return Trool.FF
+
 def hasValidModel (smtfile,solvername):
     si = SolverInteraction()
     if si.getResultForSolver(smtfile,solvername)["verified"] == smtquery.solvers.solver.Verified.VerifiedSAT:
+        return Trool.TT
+    else:
+        return Trool.FF
+
+def isCorrectResult (smtfile,solvername):
+    si = SolverInteraction()
+    if si.getResultForSolver(smtfile,solvername)["verified"] in [smtquery.solvers.solver.Verified.VerifiedSAT, smtquery.solvers.solver.Verified.Majority]:
         return Trool.TT
     else:
         return Trool.FF
@@ -165,9 +179,19 @@ def makeSatPredicate (solvername):
         return isSat (smtfile,solvername)
     return predicate
 
+def makeUnSatPredicate (solvername):
+    def predicate (smtfile):
+        return isUnSat (smtfile,solvername)
+    return predicate
+
 def makeValidModelPredicate (solvername):
     def predicate (smtfile):
         return hasValidModel (smtfile,solvername)
+    return predicate
+
+def makeIsCorrectPredicate (solvername):
+    def predicate (smtfile):
+        return isCorrectResult (smtfile,solvername)
     return predicate
 
 def makeFasterPredicate (solver1,solver2):
