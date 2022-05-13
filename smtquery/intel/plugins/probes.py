@@ -73,7 +73,8 @@ class Probes:
             "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
             "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT),
             "isSimpleRegex" : lambda smtfile: (isSimpleRegex(smtfile) and not hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
-            "isSimpleRegexConcatenation" : lambda smtfile: (isSimpleRegex(smtfile) and hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True
+            "isSimpleRegexConcatenation" : lambda smtfile: (isSimpleRegex(smtfile) and hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
+            "hasAtLeast5Variables" :  lambda smtfile: (hasAtLeastCountStringVariables(smtfile,5))
         }
 
     @staticmethod
@@ -91,6 +92,14 @@ def hasKind(kind,smtfile):
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
+
+def hasAtLeastCountStringVariables(smtfile,var_count=5):
+    vcs = smtfile.Probes.get_intel()["#variables"]
+    if Sort.String in vcs:
+        if len(set(vcs[Sort.String].keys())) >= var_count:
+            return smtquery.qlang.predicates.Trool.TT
+    return smtquery.qlang.predicates.Trool.FF
+
 
 # Regex
 def isSimpleRegex(smtfile):
