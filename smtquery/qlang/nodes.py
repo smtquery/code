@@ -101,7 +101,7 @@ class AllInstances(QNode):
         super().__init__ ([])
 
     def __str__(self):
-        return "AlLInstances"
+        return "*"
 
     def accept (self,visit):
         visit.visitAllInstances (self)

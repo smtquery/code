@@ -1,0 +1,5 @@
+#/bin/bash
+containerName=`docker ps --format '{{.Names}}#{{.Image}}' | grep basc | rev | cut -c 6- | rev`
+docker cp ${containerName}:/BASC/output $1
+
+
