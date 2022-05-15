@@ -4,8 +4,7 @@ import smtquery.solvers
 import smtquery.solvers.solver
 
 import smtquery.storage.smt
-
-
+import smtquery.config
 
 def setupCelery ():
     app = celery.Celery ("SMTQuery",
@@ -14,23 +13,21 @@ def setupCelery ():
     
     @app.task (name="runFunc")
     def runFunc (data):
-        print (data)
-        print (smtquery.solvers.solverarr)
-
-        solver = smtquery.solvers.solverarr[data["solver"]]
+        solver = smtquery.config.conf.getSolvers () [data["solver"]]
         timeout = data["timeout"]
         split = data["smtname"].split (":")
-        track = smtquery.storage.smt.storage.searchForTrack (split[0]) 
-        if track:
-            file = track.searchFile (split[1])
-            res = solver.runSolver (file,timeout)
+        file = smtquery.config.conf.getStorage().searchFile (split[0],split[1],split[2]) 
+        if file:
+            res = solver.runSolver (file,timeout,store)
+            smtquery.config.conf.getStorage().storeResult (res,file,solver)
+            
             return {"result" : res.getResult ().value,
                     "time" : res.getTime (),
                     "model" : res.getModel ()
                     }
-            
+        
         return "None"
-    
+
     return app,runFunc
     
 
@@ -52,6 +49,8 @@ class Queue:
                                                             jss["model"]
                                                         )
         
-    def workerQueue (self):
+    def workerQueue (self,storage):
+        global store
         worker = self._apps.Worker ()
+        store = storage
         worker.start ()

@@ -2,7 +2,6 @@ import yaml
 import smtquery.storage.smt.fs
 import smtquery.storage.smt.db
 
-
 storage = None
 
 def createStorage (filelocator):

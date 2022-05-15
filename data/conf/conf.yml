@@ -1,0 +1,23 @@
+solvers:
+  Z3Str3:
+    binary: /usr/local/bin/z3
+  Z3Seq:
+    binary: /usr/local/bin/z3
+  CVC4:
+    binary: /usr/local/bin/cvc4 
+
+verifiers: [Z3Seq]
+
+runParameters:
+  timeout : 5
+
+SMTStore:
+  name: DBFS
+  root: data/smtfiles
+  engine_string: sqlite:///db.sql
+  intels:
+    - Probes
+
+scheduler:
+  name: multiprocessing
+  cores: 5

@@ -1,0 +1,24 @@
+# build image
+docker build . -t basc
+# start container
+docker run -it -d basc /bin/bash
+
+
+# Executing Queries
+## Linux/OSX
+chmod +x basc_docker
+chmod +x basc_cp
+
+# To execute basc and use qlang simply type (always make sure your container is running)
+./basc_exe
+
+# To copy output files to some local directory type
+./basc_cp <destination_folder>
+
+
+## Windows:
+# Find your container ID (image basc)
+docker container ls -a
+
+# to use BASC and QLang use (always make sure your container is running): 
+docker exec -it <YOUR_CONTAINER_ID> python3 /BASC/bin/smtquery qlang

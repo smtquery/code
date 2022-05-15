@@ -7,7 +7,7 @@ setup(
     package_dir={'smtquery' : 'smtquery',
                  },
     packages=find_namespace_packages (),
-    scripts=['./bin/smtsolver', './bin/smtworker'],
+    scripts=['./bin/smtquery'],
     include_package_data=True
 )
 

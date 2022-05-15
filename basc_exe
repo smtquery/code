@@ -1,0 +1,5 @@
+#/bin/bash
+containerID=`docker ps --format '{{.ID}}#{{.Image}}' | grep basc | rev | cut -c 6- | rev`
+docker exec -it ${containerID} python3 /BASC/bin/smtquery qlang
+
+

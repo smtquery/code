@@ -1,3 +1,0 @@
-scheduler:
-  name: multiprocessing
-  cores: 5

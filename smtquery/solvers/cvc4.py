@@ -1,5 +1,6 @@
 import smtquery.solvers.solver as solver
 import subprocess
+import re
 
 class CVC4(solver.Solver):
     def __init__(self,binarypath):
@@ -13,21 +14,26 @@ class CVC4(solver.Solver):
         return "CVC4"
     
     def preprocessSMTFile  (self, origsmt, newsmt):
+        #set logic present?
+        setLogicPresent = False
+        with open(origsmt,'r') as flc:
+            for l in flc:
+                if not l.startswith(";") and '(set-logic' in l:
+                    setLogicPresent = True
+
         with open(origsmt,'r') as orig, open(newsmt,'w') as new:
-            firstline = True
+            if not setLogicPresent:
+                new.write("(set-logic QF_SLIA)\n")
             for l in orig:
-                if not l.startswith (";") and firstline:
-                    firstline = False
-                    if "(set-logic" not in l:
-                        new.write ("(set-logic ALL)\n")
-                    else:
-                        new.write (l)
-                elif "(get-model)" not in l:
-                    new.write (l)
-            new.write ("(get-model)\n")
-        
+                # remove annotations
+                for exp in ["\(get-model\)","\(check-sat\)","\(exit\)","\(set-info :status sat\)","\(set-info :status unsat\)"]:
+                    l = re.sub(exp, '', l)
+
+                # change logic if needed
+                if "(set-logic" in l:
+                    l = re.sub('\(set-logic.*?\)', '(set-logic QF_SLIA)', l)
+                new.write(l)
+            new.write("\n(check-sat)")        
 
     def buildCMDList (self,smtfilepath):
-        return [self._path,"--lang","smt2","-m","--no-interactive-prompt","--strings-exp","--produce-models",smtfilepath]
-    
-    
+        return [self._path,"--lang","smtlib2.5","-m","--no-interactive-prompt","--strings-exp","--dump-models",smtfilepath]

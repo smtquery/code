@@ -35,12 +35,12 @@ class SMTTrack:
     def filesInTrack (self):
         for root, dirs,files in os.walk (self._directory):
             for f in files:
-                if f.endswith (".smt"):
+                if f.endswith (".smt") or f.endswith (".smt2") or f.endswith (".smt25"):
                     yield SMTFile (f"{self._name}:{f}",os.path.join (root,f))
     
 
     def searchFile (self,searchname):
-        if searchname.endswith (".smt"):
+        if searchname.endswith (".smt") or searchname.endswith (".smt2") or searchname.endswith (".smt25"):
             name = searchname
         else:
             name = f"{searchname}.smt"
