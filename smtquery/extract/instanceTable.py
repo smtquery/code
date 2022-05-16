@@ -32,7 +32,7 @@ class InstanceTable:
                 self._results[smtfile.getName()] = dict()
 
             b_id = b_smtfile.getId() 
-            res = _storage.getResultsForBenchmarkId(b_id)
+            res = _storage.getResultsForInstance(smtfile)
             for s in res.keys():
                 self._results[smtfile.getName()][s] = {"Result" : res[s]["result"].name, "Time" : res[s]["time"]}
 

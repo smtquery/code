@@ -70,7 +70,6 @@ def createStorage (data):
                                                        data["engine_string"]
         )
         smtquery.intel.makeIntelManager (intels) 
-
     return storage
 
         
@@ -85,4 +84,5 @@ def readConfig (conffile):
     verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
     filepath = data["SMTStore"]["root"]
     conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath)
-    
+    storage.makeSolverInterAction()
+

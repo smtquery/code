@@ -19,7 +19,7 @@ class CactusPlot:
         b_smtfile = _storage.searchFile(b_input[0],b_input[1],b_input[2])
         if b_smtfile != None:
             b_id = b_smtfile.getId() 
-            res = _storage.getResultsForBenchmarkId(b_id)
+            res = _storage.getResultsForInstance(smtfile)
             for s in res.keys():
                 if s not in self._results:
                     self._results[s] = []

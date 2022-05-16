@@ -7,7 +7,7 @@ import hashlib
 import smtquery.config
 import smtquery.ui
 import smtquery.intel
-    
+from smtquery.utils.solverIntegration import SolverInteraction    
 
 class SMTFile:
     def __init__(self,name,filepath,id):
@@ -130,6 +130,8 @@ class DBFSStorage:
 
         self._makesmt = lambda name,filepath,id: smtquery.intel.intels.getIntel (SMTFile(name,filepath,id))
 
+    def makeSolverInterAction(self):
+        self._solverInteraction = SolverInteraction()
         
     def initialise_db (self):
         with  smtquery.ui.output.makeProgressor () as progress:
@@ -276,7 +278,7 @@ class DBFSStorage:
         }
 
     # queries
-    def getResultsForBenchmarkId(self,id):
+    def _fetchResultsForBenchmarkIdFromDB(self,id):
         conn = self._engine.connect ()
         res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id).order_by(self._result_table.c.date.desc()))
         results = dict()
@@ -288,9 +290,17 @@ class DBFSStorage:
             if len(v_results) > 0:
                 verified = v_results[0].result
             results[row.solver] = {"r_id" : row.id, "result" : row.result, "time" : row.time, "model" : row.model, "verified": verified}
-
         return results
 
+    def getResultsForBenchmarkId(self,id):
+        return self._fetchResultsForInstance(id)
+
+    # use solver interaction to obtain results if they aren't present
+    def getResultsForInstance(self,smtfile):
+        return self._solverInteraction.getResultsForInstance(smtfile)
+
+    def getResultForSolver(self,smtfile,solvername):
+        return self._solverInteraction.getResultForSolver(smtfile,solvername)
 
 
 
