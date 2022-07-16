@@ -4,8 +4,14 @@ if __name__ == "__main__":
     import smtquery.storage.smt.fs
     import smtquery.tools
     import sys
-    sys.setrecursionlimit(3000)
+    import resource 
+    import logging
 
+    logging.basicConfig(filename='smtquery.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')   
+
+    max_rec = 100000
+    resource.setrlimit(resource.RLIMIT_STACK, [0x100 * max_rec, resource.RLIM_INFINITY])
+    sys.setrecursionlimit(max_rec)    
 
     parser = argparse.ArgumentParser()
     parser.add_argument ('--confloc',dest="conf",type=str,default="./data/conf")

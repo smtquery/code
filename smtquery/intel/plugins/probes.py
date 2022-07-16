@@ -1,4 +1,3 @@
-
 import smtquery.smtcon.smt2expr
 import smtquery.smtcon.exprfun
 from smtquery.smtcon.expr import Kind
@@ -9,7 +8,9 @@ import pickle
 import tempfile
 import smtquery.smtcon.smt2expr
 from functools import partial
+import logging
 
+from datetime import datetime
 
 
 class Probes:
@@ -20,6 +21,7 @@ class Probes:
         self.use_cache = True
 
     def _storeAST(self,smtfile,ast):
+        logging.debug(f"writing AST for {smtfile.getName()}")
         rel_filepath = ''.join(f"/{f}" for f in smtfile.getName().split(":")[:-1])
         filename = smtfile.getName().split(":")[-1]
         pickle_file_path = f"{self._pickleBasePath}{rel_filepath}/{smtfile.hashContent()}_{filename}.pickle"
@@ -34,12 +36,16 @@ class Probes:
         rel_filepath = ''.join(f"/{f}" for f in smtfile.getName().split(":")[:-1])
         filename = smtfile.getName().split(":")[-1]
         pickle_file_path = f"{self._pickleBasePath}{rel_filepath}/{smtfile.hashContent()}_{filename}.pickle"
+        logging.debug(f"accessing {smtfile.getName()} as pickle file {pickle_file_path}")
+
         if not os.path.exists(self._pickleBasePath+rel_filepath):
             os.makedirs(self._pickleBasePath+rel_filepath)
         if os.path.isfile(pickle_file_path):
+            logging.debug("found pickle file")
             with open(pickle_file_path, 'rb') as handle:
                 return pickle.load(handle)
         else:
+            logging.debug("build AST")
             pr = self._smtprobe.getAST (filepath)
             self._storeAST(smtfile,pr)
             return pr
@@ -63,7 +69,7 @@ class Probes:
             "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
             "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
             "#variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
-            "pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
+            #"pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
         }
 
     def predicates (self):
