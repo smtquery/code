@@ -36,6 +36,9 @@ class Queue:
         resfunc = functools.partial (callback,func,text)
         return self._pool.apply_async (func.runSolverOnText,(text,timeout))
 
+    def runVerification (self,si,smtfile):
+        return self._pool.apply_async (si.getResultsForInstance,(smtfile))
+
     def interpretSolverRes (self,res):
         return res.get ()
 
