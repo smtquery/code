@@ -39,7 +39,11 @@ class Probes:
         logging.debug(f"accessing {smtfile.getName()} as pickle file {pickle_file_path}")
 
         if not os.path.exists(self._pickleBasePath+rel_filepath):
-            os.makedirs(self._pickleBasePath+rel_filepath)
+            try:
+                os.makedirs(self._pickleBasePath+rel_filepath)
+            except Exception as e:
+                pass
+            
         if os.path.isfile(pickle_file_path):
             logging.debug("found pickle file")
             with open(pickle_file_path, 'rb') as handle:
