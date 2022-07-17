@@ -1,7 +1,6 @@
 import smtquery.config
 import smtquery.qlang.predicates
 
-
 class InstanceEnumerator:
     def __init__ (self):
         self._subgens = []
@@ -107,9 +106,10 @@ class Attribute:
         self._res = []
         self._file = smtfile
         self._attri.accept(self)
-        pushres (self._res)
-        self._res = []
-        #return self._res
+        
+        return self._res
+        #pushres (self._res)
+        #self._res = []
 
     def visitAttributeList (self,node):
         for i in node.children ():
@@ -118,8 +118,6 @@ class Attribute:
     def visitAttribute (self,node):
         self._res.append (node (self._file))
         
-    
-
 class Interpreter:
     def Run (self,node, pushres):
         self._res = []
@@ -129,6 +127,7 @@ class Interpreter:
     def visitSelect (self,node):
         instances = InstanceSelector().Select (node.getInstance ())
         attriextractor = Attribute (node.getAttributes ())
+        total_instances = 0
 
         schedule = smtquery.config.conf.getScheduler ()
         ll = []
@@ -137,17 +136,24 @@ class Interpreter:
             if plain_pred != None:
                 pred = CheckPredicate (plain_pred)
                 for i in instances.enumerate ():
+                    total_instances+=1
                     progress.message (f"Submitting {i.getName()}")
                     res = schedule.runSelect(pred,attriextractor,i,self._push)
                     ll.append (res)
             else:
                 for i in instances.enumerate ():
+                    total_instances+=1
                     progress.message (f"Submitting {i.getName()}")
                     res = schedule.runSelectNoPred(attriextractor,i,self._push)
                     ll.append (res) 
-            progress.message (f"Waiting for results ...\n")
+            progress.message (f"Waiting for results ...")
             for r in ll:
                 r.wait ()
+
+            results = [r.get() for r in ll if r.get() != None]
+            progress.message (f"{len(results)} out of {total_instances} instances:\n")
+            print(results)
+
 
     def visitExtractNode (self,node):
         instances = InstanceSelector().Select (node.getInstances ())

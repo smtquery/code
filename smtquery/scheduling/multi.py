@@ -7,11 +7,11 @@ def callback (solver,smtfile,res):
     store.storeResult (res,smtfile,solver)
 
 def applySelect(attriextractor,instance,pushres):
-    attriextractor.Extract (instance,pushres)
+    return attriextractor.Extract (instance,pushres)
 
 def applySelectCheckPred(pred,attriextractor,instance,pushres):
     if pred.Check (instance) == smtquery.qlang.predicates.Trool.TT:
-        applySelect(attriextractor,instance,pushres)
+        return applySelect(attriextractor,instance,pushres)
 
 def applyExtract(node,instance):
     node.getExtractFunc () (node.getApply  () (instance))
