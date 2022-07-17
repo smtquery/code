@@ -94,13 +94,13 @@ class Probes:
         return "0.0.1"
     
 def hasKind(kind,smtfile):
-    if kind in smtfile.Probes.get_intel()["has"]:
+    if kind in Probes().getIntel(smtfile).get_intel()["has"]: #smtfile.Probes.get_intel()["has"]:
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
 
 def hasAtLeastCountStringVariables(smtfile,var_count=5):
-    vcs = smtfile.Probes.get_intel()["#variables"]
+    vcs = Probes().getIntel(smtfile).get_intel()["#variables"]
     if Sort.String in vcs:
         if len(set(vcs[Sort.String].keys())) >= var_count:
             return smtquery.qlang.predicates.Trool.TT
@@ -109,13 +109,13 @@ def hasAtLeastCountStringVariables(smtfile,var_count=5):
 
 # Regex
 def isSimpleRegex(smtfile):
-    if not smtfile.Probes.get_intel()["regex"]["complement"]:
+    if not Probes().getIntel(smtfile).get_intel()["regex"]["complement"]:
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
 
 def hasConcatenationRegex(smtfile):
-    if not smtfile.Probes.get_intel()["regex"]["concatenation"]:
+    if not Probes().getIntel(smtfile).get_intel()["regex"]["concatenation"]:
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
@@ -132,7 +132,7 @@ def isQuadratic(smtfile,max_vars=2):
     return smtquery.qlang.predicates.Trool.TT
     """
 
-    for pv in [pv[Sort.String] for pv in smtfile.Probes.get_intel()["pathVars"] if Sort.String in pv]:
+    for pv in [pv[Sort.String] for pv in Probes().getIntel(smtfile).get_intel()["pathVars"] if Sort.String in pv]:
         qudratic = qudratic and all([pv[var] <= max_vars for var in pv.keys()])
     if qudratic:
         return smtquery.qlang.predicates.Trool.TT

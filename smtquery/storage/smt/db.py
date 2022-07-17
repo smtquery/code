@@ -82,8 +82,15 @@ class Benchmark:
     def getName (self):
         return self._name
 
+# needed for multiprocessing
+def smtfile_getName(smtfile):
+    return smtfile.getName()
 
+def smtfile_hashContent(smtfile):
+    return smtfile.hashContent()
 
+def smtfile_SMTString(smtfile):
+    return smtfile.SMTString()
     
 class DBFSStorage:
     def __init__ (self,root,enginestring,intels = None):
@@ -272,9 +279,9 @@ class DBFSStorage:
 
     def storageAttributes (self):
         return {
-            "Name" : lambda smtfile: smtfile.getName (),
-            "Hash" : lambda smtfile: smtfile.hashContent (),
-            "Content" : lambda smtfile: smtfile.SMTString (),            
+            "Name" : smtfile_getName,
+            "Hash" : smtfile_hashContent,
+            "Content" : smtfile_SMTString,            
         }
 
     # queries
