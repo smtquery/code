@@ -82,6 +82,7 @@ class Probes:
             "hasWEQ" : partial(hasKind,Kind.WEQ),
             "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
             "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT),
+            "hasHOL" : partial(hasKind,Kind.HOL_FUNCTION),
             "isSimpleRegex" : lambda smtfile: (isSimpleRegex(smtfile) and not hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
             "isSimpleRegexConcatenation" : lambda smtfile: (isSimpleRegex(smtfile) and hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
             "hasAtLeast5Variables" :  lambda smtfile: (hasAtLeastCountStringVariables(smtfile,5))
