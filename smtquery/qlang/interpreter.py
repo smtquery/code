@@ -128,7 +128,30 @@ class Interpreter:
         instances = InstanceSelector().Select (node.getInstance ())
         attriextractor = Attribute (node.getAttributes ())
         total_instances = 0
+        
+        schedule = smtquery.config.conf.getScheduler ()
+        ll = []
+        with smtquery.ui.output.makeProgressor () as progress:
+            plain_pred = node.getPredicate ()
+            for i in instances.enumerate ():
+                total_instances+=1
+                progress.message (f"Submitting {i.getName()}")
+                if plain_pred == None or CheckPredicate (plain_pred).Check (i) == smtquery.qlang.predicates.Trool.TT:
+                    print("X")
+                    res = schedule.runSelectNoPred(attriextractor,i,self._push)
+                    ll.append (res)
 
+            progress.message (f"Waiting for results ...")
+            for r in ll:
+                r.wait ()
+
+            results = [r.get() for r in ll if r.get() != None]
+            progress.message (f"{len(results)} out of {total_instances} instances:\n")
+            print(results)
+
+
+
+        """
         schedule = smtquery.config.conf.getScheduler ()
         ll = []
         with smtquery.ui.output.makeProgressor () as progress:
@@ -153,7 +176,7 @@ class Interpreter:
             results = [r.get() for r in ll if r.get() != None]
             progress.message (f"{len(results)} out of {total_instances} instances:\n")
             print(results)
-
+        """
 
     def visitExtractNode (self,node):
         instances = InstanceSelector().Select (node.getInstances ())
