@@ -159,7 +159,6 @@ class Interpreter:
         instances = InstanceSelector().Select (node.getInstances ())
         total_checked_instances = 0
 
-        """
         schedule = smtquery.config.conf.getScheduler ()
         ll = []
         with smtquery.ui.output.makeProgressor () as progress:
@@ -181,13 +180,10 @@ class Interpreter:
             for r in ll:
                 r.wait ()
             node.getExtractFunc ().finalise(total_checked_instances)
-        """
-
-
-
-
-        ###
         
+        ###
+
+        """
         plain_pred = node.getPredicates ()
         total_checked_instances = 0
         if plain_pred != None:
@@ -202,7 +198,7 @@ class Interpreter:
                 total_checked_instances+=1
                 node.getExtractFunc () (node.getApply  () (i))
             node.getExtractFunc ().finalise(total_checked_instances)
-    
+        """
     
 
     
