@@ -179,7 +179,7 @@ class Interpreter:
             progress.message (f"Waiting for results ...\n")
             for r in ll:
                 r.wait ()
-            node.getExtractFunc ().finalise(total_checked_instances)
+            node.getExtractFunc ().finalise([r.get() for r in ll],total_checked_instances)
         
         ###
 

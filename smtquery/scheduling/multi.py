@@ -76,11 +76,11 @@ def applySelectCheckPred(conf,pred,attriextractor,instance,pushres):
         return applySelect(conf,attriextractor,instance,pushres)
 
 def applyExtract(node,instance):
-    node.getExtractFunc () (node.getApply  () (instance))
+    return node.getExtractFunc () (node.getApply  () (instance))
 
 def applyExtractCheckPred(pred,node,instance):
     if pred.Check (instance) == smtquery.qlang.predicates.Trool.TT:
-        applyExtract(node,instance)
+        return applyExtract(node,instance)
 
 
 def callbackSelect (res):
@@ -111,10 +111,10 @@ class Queue:
         return self._pool.apipe (applySelect,conf,attriextractor,instance,pushres)#,callback = callbackSelect)
     
     def runExtract (self,pred,node,instance):
-        return self._pool.apipe (applyExtractCheckPred,(pred,node,instance))
+        return self._pool.apipe (applyExtractCheckPred,pred,node,instance)
 
     def runExtractNoPred (self,node,instance):
-        return self._pool.apipe (applyExtract,(node,instance))
+        return self._pool.apipe (applyExtract,node,instance)
     
     def workerQueue (self):
         pass 

@@ -2,6 +2,7 @@ import smtquery.ui
 from smtquery.smtcon.expr import *
 import graphviz
 import os
+from smtquery.intel.plugins.probes import Probes
 
 class SMTPlot:
     colours = dict()
@@ -13,14 +14,14 @@ class SMTPlot:
     def getName ():
         return "SMTPlot"
 
-    def finalise(self,total):
+    def finalise(self,results,total):
         pass
 
     def __call__  (self,smtfile):
         with smtquery.ui.output.makePlainMessager () as mess:
             mess.message (smtfile.getName())
             self.colours = dict()
-            ast = smtfile.Probes._get()
+            ast = Probes().getIntel(smtfile)
             dot = graphviz.Digraph('G', format='pdf')
             self._buildGraph(ast,dot)
             dot.render(self._getOutputFileName(smtfile.getName()),cleanup=True)
@@ -64,7 +65,10 @@ class SMTPlot:
         file_path = f"{self.plot_output_folder}/{rel_filepath}/{filename}"
 
         if not os.path.exists(self.plot_output_folder+rel_filepath):
-            os.makedirs(self.plot_output_folder+rel_filepath)
+            try:
+                os.makedirs(self.plot_output_folder+rel_filepath)
+            except Exception as e:
+                pass # already created due to multiprocessing
 
         return file_path
 

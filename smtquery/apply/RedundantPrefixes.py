@@ -4,6 +4,7 @@ import smtquery.storage.smt.fs
 import smtquery.intel
 from smtquery.smtcon.smt2expr import Z3SMTtoSExpr
 
+from smtquery.intel.plugins.probes import Probes
 
 class EqualsTrue:
     output_folder = 'output/prefix_true'
@@ -15,7 +16,7 @@ class EqualsTrue:
 
     def __call__(self, smtfile):
         new_ast = ASTRef()
-        ast = smtfile.Probes._get()
+        ast = Probes().getIntel(smtfile)
 
         for ass in ast:
             while ass.decl() == '=' and str(ass.children()[0]) == 'true':
@@ -25,7 +26,7 @@ class EqualsTrue:
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
             handle.write(str(new_ast))
         new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(),self.root+"/"+self._getOutputFilePath(smtfile))
-        smtquery.intel.intels.getIntel(new_smtfile)
+        Probes().getIntel(new_smtfile)
         return new_smtfile
 
     def _getOutputFilePath(self,smtfile):
@@ -42,7 +43,7 @@ class ReduceNegations:
 
     def __call__(self, smtfile):
         new_ast = ASTRef()
-        ast = smtfile.Probes._get()
+        ast = Probes().getIntel(smtfile)
 
         for ass in ast:
             while ass.decl() == 'not' and isinstance(ass.children()[0], BoolExpr) and ass.children()[0].decl() == 'not':
@@ -52,7 +53,7 @@ class ReduceNegations:
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
             handle.write(str(new_ast))
         new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(),self.root+"/"+self._getOutputFilePath(smtfile))
-        smtquery.intel.intels.getIntel(new_smtfile)
+        Probes().getIntel(new_smtfile)
         return new_smtfile
 
 

@@ -259,7 +259,7 @@ def _build_aux_string(expr):
         if len(expr.vChildren) == 0:
             return f" {expr.vDecl} ",False
         if len(expr.vParams) > 0:
-            r_str=f"((_ {expr.vDecl}"+''.join([f" {p}" for p in expr.vParams])+") "
+            r_str=f"((_ {expr.vDecl}"+''.join([f" {p}" for p in expr.vParams])+") ",True
         else:
             r_str = f"({expr.vDecl} ",True
         return r_str

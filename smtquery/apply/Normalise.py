@@ -3,6 +3,7 @@ import smtquery.ui
 import smtquery.storage.smt.fs
 import smtquery.intel
 
+from smtquery.intel.plugins.probes import Probes
 
 class DisjoinConstraints:
     output_folder = 'output/disjoin_constraints'
@@ -14,7 +15,7 @@ class DisjoinConstraints:
 
     def __call__(self, smtfile):
         new_ast = ASTRef()
-        ast = smtfile.Probes._get()
+        ast = Probes().getIntel(smtfile)
 
         for ass in ast:
             for expr in self._extract_constraints(ass):
@@ -23,7 +24,7 @@ class DisjoinConstraints:
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
             handle.write(str(new_ast))
         new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(),self.root+"/"+self._getOutputFilePath(smtfile))
-        smtquery.intel.intels.getIntel(new_smtfile)
+        Probes().getIntel(new_smtfile)
         return new_smtfile
 
     def _getOutputFilePath(self,smtfile):
@@ -42,7 +43,7 @@ class DisjoinConstraints:
 
         return new_expr
 
-
+"""
 class SortConstraints:
     output_folder = 'output/sort_constraints'
     root = '.'
@@ -53,19 +54,19 @@ class SortConstraints:
 
     def __call__(self, smtfile):
         new_ast = ASTRef()
-        ast = smtfile.Probes._get()
+        ast = Probes().getIntel(smtfile)
         for i, _ in sorted(enumerate([str(x) for x in ast]), key=lambda x: x[1]):
             new_ast.add_node(ast[i])
 
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
             handle.write(str(new_ast))
         new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(),self.root+"/"+self._getOutputFilePath(smtfile))
-        smtquery.intel.intels.getIntel(new_smtfile)
+        Probes().getIntel(new_smtfile)
         return new_smtfile
 
     def _getOutputFilePath(self,smtfile):
         return self.output_folder+''.join(f"/{f}" for f in smtfile.getName().split(":"))
-
+"""
 
 def PullExtractor():
-    return [DisjoinConstraints, SortConstraints]
+    return [DisjoinConstraints]

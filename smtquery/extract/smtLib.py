@@ -2,6 +2,7 @@ import smtquery.ui
 from smtquery.smtcon.expr import *
 import graphviz
 import os
+from smtquery.intel.plugins.probes import Probes
 
 class SMTFileExport:
     output_folder = "output/smtfiles"
@@ -11,12 +12,12 @@ class SMTFileExport:
     def getName ():
         return "SMTLib"
 
-    def finalise(self,total): 
+    def finalise(self,results,total): 
         pass
 
     def __call__  (self,smtfile):
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
-            handle.write(str(smtfile.Probes._get()))
+            handle.write(str(Probes().getIntel(smtfile)))
         return smtfile
 
     def _getOutputFilePath(self,smtfile):

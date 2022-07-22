@@ -5,6 +5,7 @@ import smtquery.storage.smt.fs
 import smtquery.intel
 from smtquery.smtcon.expr import *
 
+from smtquery.intel.plugins.probes import Probes
 
 class RenameVariables:
     output_folder = 'output/rename_variables'
@@ -22,7 +23,8 @@ class RenameVariables:
         # nVar = {k:len(v) for k, v in smtfile.Probes.getIntel()['variables'].items()}
 
         new_ast = ASTRef()
-        ast = smtfile.Probes._get()
+        ast = Probes().getIntel(smtfile)
+
         # building substitution dict (str01, str02, int01...)
         self.subst_dict = {name: f'{self.rename_dict[sort]}{str(i+1).zfill(math.floor(math.log(len(names), 10))+1)}'
                            for sort, names in ast.get_intel()['variables'].items() for i, name in enumerate(names)}
@@ -30,10 +32,12 @@ class RenameVariables:
         for ass in ast:
             new_ast.add_node(self._substitute_in_node(ass))
 
+        print(self.subst_dict)
+
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
             handle.write(str(new_ast))
-        new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName, self.root+"/"+self._getOutputFilePath(smtfile))
-        smtquery.intel.intels.getIntel(new_smtfile)
+        new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(), self.root+"/"+self._getOutputFilePath(smtfile))
+        Probes().getIntel(new_smtfile)
         return new_smtfile
 
 

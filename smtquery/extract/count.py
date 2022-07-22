@@ -9,7 +9,7 @@ class CountInstances:
     def getName ():
         return "Count"
 
-    def finalise(self,total):
+    def finalise(self,results,total):
         with smtquery.ui.output.makePlainMessager () as mess:
             mess.message (f"Total matching instances: {self._totalCount} of {total} within the selected set ({(100/total)*self._totalCount}%). ")
         
