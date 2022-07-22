@@ -31,9 +31,14 @@ class SolverInteraction:
                 res = self._schedule.runSolver (solver,smtfile,self._run_parameters["timeout"])
                 ll.append (res)                
             for r in ll:
-                r.wait ()
+                # check if it is handled by a scheduler
+                if hasattr(r, 'wait'):
+                    r.wait ()
+
+            for r in ll:    
                 res = self._schedule.interpretSolverRes (r)
-                self._storage.storeResult (res,smtfile,solver)
+                if res != None:
+                    self._storage.storeResult (res,smtfile,solver)
             return self._storage._fetchResultsForBenchmarkIdFromDB(b_id)
         return dict()
 
@@ -109,9 +114,11 @@ class SolverInteraction:
             # check if it is handled by a scheduler
             if hasattr(r, 'wait'):
                 r.wait ()
-                
-            t_res = self._schedule.interpretSolverRes (r)
-            verifier_results+=[True if t_res.getResult() == smtquery.solvers.solver.Result.Satisfied else False]
+       
+        verifier_results=[self._schedule.interpretSolverRes (r).getResult() == smtquery.solvers.solver.Result.Satisfied for r in ll if self._schedule.interpretSolverRes(r) != None]
+
+        #t_res = self._schedule.interpretSolverRes (r)
+        #verifier_results+=[True if t_res.getResult() == smtquery.solvers.solver.Result.Satisfied else False]
 
         # a least on verfier has to validate the model
         return any(verifier_results)

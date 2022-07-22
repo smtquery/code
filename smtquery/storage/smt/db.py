@@ -280,7 +280,7 @@ class DBFSStorage:
                 conn.execute (query)
                 break
             except Exception as e:
-                print("I'm waiting... DB's locked!")
+                print(f"{os.getpid()} - I'm waiting... DB's locked!")
                 time.sleep(1)
 
 
