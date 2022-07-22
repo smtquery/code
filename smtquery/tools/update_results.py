@@ -9,10 +9,10 @@ def addArguments (parser):
     return 
 
 def run (args):
-    solvers = smtquery.config.conf.getSolvers ()
-    storage = smtquery.config.conf.getStorage ()
-    schedule = smtquery.config.conf.getScheduler ()
-    run_parameters = smtquery.config.conf.getRunParameters ()
+    solvers = smtquery.config.getConfiguration().getSolvers ()
+    storage = smtquery.config.getConfiguration().getStorage ()
+    schedule = smtquery.config.getConfiguration().getScheduler ()
+    run_parameters = smtquery.config.getConfiguration().getRunParameters ()
     ll = []
     with smtquery.ui.output.makeProgressor () as progress:
         for file in storage.allFiles ():

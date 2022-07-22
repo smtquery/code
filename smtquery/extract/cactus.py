@@ -14,7 +14,7 @@ class CactusPlot:
         
     def __call__  (self,smtfile):
         # collect results
-        _storage = smtquery.config.conf.getStorage ()
+        _storage = smtquery.config.getConfiguration().getStorage ()
         b_input = smtfile.getName().split(":")
         b_smtfile = _storage.searchFile(b_input[0],b_input[1],b_input[2])
         if b_smtfile != None:

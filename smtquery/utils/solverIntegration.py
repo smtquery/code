@@ -5,12 +5,12 @@ from smtquery.qlang.trool import *
 
 class SolverInteraction:
     def __init__(self):
-        self._solvers = smtquery.config.conf.getSolvers ()
-        self._schedule = smtquery.config.conf.getScheduler ()
-        self._run_parameters = smtquery.config.conf.getRunParameters ()
-        self._storage = smtquery.config.conf.getStorage ()
-        self._verifiers = smtquery.config.conf.getVerifiers ()
-        self._file_root = smtquery.config.conf.getSMTFilePath ()
+        self._solvers = smtquery.config.getConfiguration().getSolvers ()
+        self._schedule = smtquery.config.getConfiguration().getScheduler ()
+        self._run_parameters = smtquery.config.getConfiguration().getRunParameters ()
+        self._storage = smtquery.config.getConfiguration().getStorage ()
+        self._verifiers = smtquery.config.getConfiguration().getVerifiers ()
+        self._file_root = smtquery.config.getConfiguration().getSMTFilePath ()
 
     def getResultForSolver (self,smtfile,solvername):
         return self.getResultsForInstance(smtfile)[solvername]
@@ -106,7 +106,10 @@ class SolverInteraction:
                 t_res = self._schedule.runSolverOnText(verifier,smt_ver_text,self._run_parameters["timeout"])
                 ll.append (t_res)                
         for r in ll:
-            r.wait ()
+            # check if it is handled by a scheduler
+            if hasattr(r, 'wait'):
+                r.wait ()
+                
             t_res = self._schedule.interpretSolverRes (r)
             verifier_results+=[True if t_res.getResult() == smtquery.solvers.solver.Result.Satisfied else False]
 

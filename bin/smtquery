@@ -31,3 +31,5 @@ if __name__ == "__main__":
     if "func" in args:
         args.func (args)
 
+    smtquery.config.getConfiguration().cleanup()
+

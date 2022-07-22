@@ -13,13 +13,13 @@ def setupCelery ():
     
     @app.task (name="runFunc")
     def runFunc (data):
-        solver = smtquery.config.conf.getSolvers () [data["solver"]]
+        solver = smtquery.config.getConfiguration().getSolvers () [data["solver"]]
         timeout = data["timeout"]
         split = data["smtname"].split (":")
-        file = smtquery.config.conf.getStorage().searchFile (split[0],split[1],split[2]) 
+        file = smtquery.config.getConfiguration().getStorage().searchFile (split[0],split[1],split[2]) 
         if file:
             res = solver.runSolver (file,timeout,store)
-            smtquery.config.conf.getStorage().storeResult (res,file,solver)
+            smtquery.config.getConfiguration().getStorage().storeResult (res,file,solver)
             
             return {"result" : res.getResult ().value,
                     "time" : res.getTime (),

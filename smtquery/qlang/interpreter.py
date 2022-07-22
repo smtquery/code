@@ -27,7 +27,7 @@ class InstanceSelector:
         self._res = instances
             
     def visitBenchTrackInstances (self,node):
-        storage = smtquery.config.conf.getStorage ()
+        storage = smtquery.config.getConfiguration().getStorage ()
         for bb in storage.getBenchmarks ():
             if node.getBenchmark ().replace(":","") == bb.getName ():
                 for track in bb.tracksInBenchmark ():
@@ -36,13 +36,13 @@ class InstanceSelector:
                 
         
     def visitBenchInstances (self,node):
-        storage = smtquery.config.conf.getStorage ()
+        storage = smtquery.config.getConfiguration().getStorage ()
         for bb in storage.getBenchmarks ():
             if node.getBenchmark () == bb.getName ():
                 self._res = bb.filesInBenchmark ()
     
     def visitAllInstances (self,node):
-        storage = smtquery.config.conf.getStorage ()
+        storage = smtquery.config.getConfiguration().getStorage ()
         self._res = storage.allFiles ()
         
 class CheckPredicate:
@@ -129,7 +129,7 @@ class Interpreter:
         attriextractor = Attribute (node.getAttributes ())
         total_instances = 0
 
-        schedule = smtquery.config.conf.getScheduler ()
+        schedule = smtquery.config.getConfiguration().getScheduler ()
         ll = []
         with smtquery.ui.output.makeProgressor () as progress:
             plain_pred = node.getPredicate ()
@@ -138,13 +138,13 @@ class Interpreter:
                 for i in instances.enumerate ():
                     total_instances+=1
                     progress.message (f"Submitting {i.getName()}")
-                    res = schedule.runSelect(pred,attriextractor,i,self._push)
+                    res = schedule.runSelect("",pred,attriextractor,i,self._push)
                     ll.append (res)
             else:
                 for i in instances.enumerate ():
                     total_instances+=1
                     progress.message (f"Submitting {i.getName()}")
-                    res = schedule.runSelectNoPred(attriextractor,i,self._push)
+                    res = schedule.runSelectNoPred("",attriextractor,i,self._push)
                     ll.append (res) 
             progress.message (f"Waiting for results ...")
             for r in ll:
@@ -159,7 +159,7 @@ class Interpreter:
         instances = InstanceSelector().Select (node.getInstances ())
         total_checked_instances = 0
 
-        schedule = smtquery.config.conf.getScheduler ()
+        schedule = smtquery.config.getConfiguration().getScheduler ()
         ll = []
         with smtquery.ui.output.makeProgressor () as progress:
             plain_pred = node.getPredicates ()

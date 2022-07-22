@@ -10,32 +10,32 @@ def hasWordRegex (smtfile):
         return Trool.FF
 
 def isSat (smtfile,solvername):
-    if smtquery.config.conf.getStorage ().getResultForSolver(smtfile,solvername)["result"] == smtquery.solvers.solver.Result.Satisfied:
+    if smtquery.config.getConfiguration().getStorage ().getResultForSolver(smtfile,solvername)["result"] == smtquery.solvers.solver.Result.Satisfied:
         return Trool.TT
     else:
         return Trool.FF
 
 def isUnSat (smtfile,solvername):
-    if smtquery.config.conf.getStorage ().getResultForSolver(smtfile,solvername)["result"] == smtquery.solvers.solver.Result.NotSatisfied:
+    if smtquery.config.getConfiguration().getStorage ().getResultForSolver(smtfile,solvername)["result"] == smtquery.solvers.solver.Result.NotSatisfied:
         return Trool.TT
     else:
         return Trool.FF
 
 def hasValidModel (smtfile,solvername):
-    if smtquery.config.conf.getStorage ().getResultForSolver(smtfile,solvername)["verified"] == smtquery.solvers.solver.Verified.VerifiedSAT:
+    if smtquery.config.getConfiguration().getStorage ().getResultForSolver(smtfile,solvername)["verified"] == smtquery.solvers.solver.Verified.VerifiedSAT:
         return Trool.TT
     else:
         return Trool.FF
 
 def isCorrectResult (smtfile,solvername):
-    if smtquery.config.conf.getStorage ().getResultForSolver(smtfile,solvername)["verified"] in [smtquery.solvers.solver.Verified.VerifiedSAT, smtquery.solvers.solver.Verified.Majority]:
+    if smtquery.config.getConfiguration().getStorage ().getResultForSolver(smtfile,solvername)["verified"] in [smtquery.solvers.solver.Verified.VerifiedSAT, smtquery.solvers.solver.Verified.Majority]:
         return Trool.TT
     else:
         return Trool.FF
 
 # returns true if both solvers agree on a result and solver1 is faster than the other
 def isFaster (smtfile,solver1,solver2):
-    res = smtquery.config.conf.getStorage ().getResultsForInstance(smtfile)
+    res = smtquery.config.getConfiguration().getStorage ().getResultsForInstance(smtfile)
 
     # compare results
     validResults = set({smtquery.solvers.solver.Result.Satisfied,smtquery.solvers.solver.Result.NotSatisfied})
