@@ -2,6 +2,7 @@ import os
 import shutil
 import sqlalchemy
 import datetime
+import time
 import smtquery.solvers.solver
 import hashlib
 import smtquery.config
@@ -271,8 +272,20 @@ class DBFSStorage:
             verification_result_id = result["r_id"],
             result = verified,
             date = datetime.datetime.now ()
-        )    
-        conn.execute (query)
+        )
+
+        # busy wait for multiprocessing 
+        while True:
+            try:
+                conn.execute (query)
+                break
+            except Exception as e:
+                print("I'm waiting... DB's locked!")
+                time.sleep(1)
+
+
+
+        
 
     def storagePredicates (self):
         return smtquery.intel.intels.predicates ()
