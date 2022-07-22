@@ -1,20 +1,18 @@
 import smtquery.ui
 from smtquery.solvers.solver import *
 
-class CountInstances:
-
-    _totalCount = 0
-    
+class CountInstances:    
     @staticmethod
     def getName ():
         return "Count"
 
     def finalise(self,results,total):
+        totalCount = sum([r for r in results if r != None])
         with smtquery.ui.output.makePlainMessager () as mess:
-            mess.message (f"Total matching instances: {self._totalCount} of {total} within the selected set ({(100/total)*self._totalCount}%). ")
+            mess.message (f"Total matching instances: {totalCount} of {total} within the selected set ({(100/total)*totalCount}%). ")
         
     def __call__  (self,smtfile):
-        self._totalCount+=1
+        return 1
 
 def PullExtractor():
     return [CountInstances]

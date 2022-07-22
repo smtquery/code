@@ -27,9 +27,11 @@ if __name__ == "__main__":
     filelocator = smtquery.config.FileLocator ([args.conf])
     with open (filelocator.findFile("conf.yml")) as ff:
         smtquery.config.readConfig (ff)
-
-    if "func" in args:
-        args.func (args)
-
+    try:
+        if "func" in args:
+            args.func (args)
+    except Exception as e:
+        print(e)
+        
     smtquery.config.getConfiguration().cleanup()
 

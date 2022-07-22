@@ -73,7 +73,7 @@ class Probes:
             "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
             "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
             "#variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
-            #"pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
+            "pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
         }
 
     def predicates (self):
@@ -138,7 +138,7 @@ def isQuadratic(smtfile,max_vars=2):
     """
 
     for pv in [pv[Sort.String] for pv in Probes().getIntel(smtfile).get_intel()["pathVars"] if Sort.String in pv]:
-        qudratic = qudratic and all([pv[var] <= max_vars for var in pv.keys()])
+        qudratic = all([pv[var] <= max_vars for var in pv.keys()]) and qudratic
     if qudratic:
         return smtquery.qlang.predicates.Trool.TT
     else:
