@@ -38,7 +38,10 @@ class Z3SMTtoSExpr(SMTtoSExpr):
         return None
 
     def getZ3AST(self,file_path):
+        #try:
         return z3.parse_smt2_file(file_path)
+        #except Exception as e:
+        #    print(e,file_path)
 
     def getZ3ASTFromText(self,text):
         return z3.parse_smt2_string(text)

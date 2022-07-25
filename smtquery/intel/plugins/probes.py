@@ -9,7 +9,7 @@ import tempfile
 import smtquery.smtcon.smt2expr
 from functools import partial
 import logging
-
+from smtquery.qlang.trool import *
 from datetime import datetime
 
 
@@ -73,7 +73,7 @@ class Probes:
             "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
             "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
             "#variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
-            "pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
+            #"pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
         }
 
     def predicates (self):
@@ -84,7 +84,7 @@ class Probes:
             "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT),
             "hasHOL" : partial(hasKind,Kind.HOL_FUNCTION),
             "isSimpleRegex" : lambda smtfile: (isSimpleRegex(smtfile) and not hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
-            "isSimpleRegexConcatenation" : lambda smtfile: (isSimpleRegex(smtfile) and hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
+            "isRegexConcatenation" : lambda smtfile: (isSimpleRegex(smtfile) and hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
             "hasAtLeast5Variables" :  lambda smtfile: (hasAtLeastCountStringVariables(smtfile,5))
         }
 
@@ -128,21 +128,20 @@ def hasConcatenationRegex(smtfile):
 def isQuadratic(smtfile,max_vars=2):
     qudratic = True
 
-    """
     # check quadtratic without repecting the paths
-    vcs = smtfile.Probes.get_intel()["#variables"]
+    vcs = Probes().getIntel(smtfile).get_intel()["#variables"]
     if Sort.String in vcs:
         if not all([vcs[Sort.String][var] <= max_vars for var in vcs[Sort.String].keys()]):
             return smtquery.qlang.predicates.Trool.FF
     return smtquery.qlang.predicates.Trool.TT
+    
     """
-
     for pv in [pv[Sort.String] for pv in Probes().getIntel(smtfile).get_intel()["pathVars"] if Sort.String in pv]:
         qudratic = all([pv[var] <= max_vars for var in pv.keys()]) and qudratic
     if qudratic:
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
-
+    """
 def makePlugin ():
     return Probes
