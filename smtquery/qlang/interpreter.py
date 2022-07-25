@@ -138,13 +138,13 @@ class Interpreter:
                 for i in instances.enumerate ():
                     total_instances+=1
                     progress.message (f"Submitting {i.getName()}")
-                    res = schedule.runSelect("",pred,attriextractor,i,self._push)
+                    res = schedule.runSelect(pred,attriextractor,i,self._push)
                     ll.append (res)
             else:
                 for i in instances.enumerate ():
                     total_instances+=1
                     progress.message (f"Submitting {i.getName()}")
-                    res = schedule.runSelectNoPred("",attriextractor,i,self._push)
+                    res = schedule.runSelectNoPred(attriextractor,i,self._push)
                     ll.append (res) 
             progress.message (f"Waiting for results ...")
             for r in ll:

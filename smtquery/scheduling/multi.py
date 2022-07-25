@@ -68,12 +68,12 @@ def callback (solver,smtfile,res):
     store = smtquery.config.getConfiguration().getStorage ()
     store.storeResult (res,smtfile,solver)
 
-def applySelect(conf,attriextractor,instance,pushres):
+def applySelect(attriextractor,instance,pushres):
     return attriextractor.Extract (instance,pushres)
 
-def applySelectCheckPred(conf,pred,attriextractor,instance,pushres):
+def applySelectCheckPred(pred,attriextractor,instance,pushres):
     if pred.Check (instance) == smtquery.qlang.predicates.Trool.TT:
-        return applySelect(conf,attriextractor,instance,pushres)
+        return applySelect(attriextractor,instance,pushres)
 
 def applyExtract(node,instance):
     return node.getExtractFunc () (node.getApply  () (instance))
@@ -81,7 +81,6 @@ def applyExtract(node,instance):
 def applyExtractCheckPred(pred,node,instance):
     if pred.Check (instance) == smtquery.qlang.predicates.Trool.TT:
         return applyExtract(node,instance)
-
 
 def callbackSelect (res):
     return res 
@@ -107,11 +106,11 @@ class Queue:
     def interpretSolverRes (self,res):
         return res.get ()
 
-    def runSelect (self,conf,pred,attriextractor,instance,pushres):
-        return self._pool.apipe (applySelectCheckPred,conf,pred,attriextractor,instance,pushres)#,callback = callbackSelect)
+    def runSelect (self,pred,attriextractor,instance,pushres):
+        return self._pool.apipe (applySelectCheckPred,pred,attriextractor,instance,pushres)#,callback = callbackSelect)
 
-    def runSelectNoPred (self,conf,attriextractor,instance,pushres):
-        return self._pool.apipe (applySelect,conf,attriextractor,instance,pushres)#,callback = callbackSelect)
+    def runSelectNoPred (self,attriextractor,instance,pushres):
+        return self._pool.apipe (applySelect,attriextractor,instance,pushres)#,callback = callbackSelect)
     
     def runExtract (self,pred,node,instance):
         return self._pool.apipe (applyExtractCheckPred,pred,node,instance)
