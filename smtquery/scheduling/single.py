@@ -27,10 +27,13 @@ class Queue:
     def __init__(self):
         pass
 
-    def runSolver (self,func,smtfile,timeout):
-        res = func.runSolver(smtfile,timeout) 
-        store = smtquery.config.getConfiguration().getStorage ()
-        store.storeResult (res,smtfile,func)
+    def runSolver (self,func,smtfiles,timeouts):
+        results = []
+        for smtfile,timeout in zip(smtfiles,timeouts):  
+            results.append(func.runSolver(smtfile,timeout))
+        return results
+        #store = smtquery.config.getConfiguration().getStorage ()
+        #store.storeResult (res,smtfile,func)
 
     def runSolverOnText (self,func,text,timeout):
         return func.runSolverOnText(text,timeout)

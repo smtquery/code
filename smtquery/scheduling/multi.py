@@ -90,16 +90,19 @@ class Queue:
     def __init__(self,N = 5):
         self._pool = ProcessPool(nodes=N)
 
-    def runSolver (self,func,smtfile,timeout):
-        resfunc = functools.partial (callback,func,smtfile)
-        return self._pool.apipe (func.runSolver,(smtfile,timeout),callback = resfunc)
+    def runSolver (self,func,smtfiles,timeouts):
+        #resfunc = functools.partial (callback,func,smtfile)
+        #return self._pool.apipe (func.runSolver,smtfile,timeout,callback = resfunc)
+        return self._pool.amap (func.runSolver,smtfiles,timeouts)
+
 
     def runSolverOnText (self,func,text,timeout):
         resfunc = functools.partial (callback,func,text)
         return self._pool.apipe (func.runSolverOnText,(text,timeout))
 
-    def runVerification (self,si,smtfile):
-        return self._pool.apipe (si.getResultsForInstance,(smtfile))
+    def runVerification (self,si,smtfiles):
+        #return self._pool.apipe (si.getResultsForInstance,smtfile)
+        return self._pool.amap (si,smtfiles)
 
     def interpretSolverRes (self,res):
         return res.get ()

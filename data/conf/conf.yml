@@ -1,10 +1,10 @@
 solvers:
   Z3Str3:
-    binary: /home/mku/tools/z3/bin/z3 
+    binary: /Users/mku/Documents/Uni_WORK/29_SMTQuery/venv/bin/z3 
   Z3Seq:
-    binary: /home/mku/tools/z3/bin/z3 
+    binary: /Users/mku/Documents/Uni_WORK/29_SMTQuery/venv/bin/z3
   CVC5:
-    binary: /home/mku/tools/cvc5/cvc5 
+    binary: /Users/mku/Downloads/cvc5-macOS 
 
 verifiers: [Z3Seq]
 
@@ -20,4 +20,4 @@ SMTStore:
 
 scheduler:
   name: multiprocessing
-  cores: 128
+  cores: 6

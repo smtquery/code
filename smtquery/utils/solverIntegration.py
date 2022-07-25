@@ -26,20 +26,30 @@ class SolverInteraction:
             if set(res.keys()) == set(self._solvers.keys()):
                 return res
             # fall back
-            ll = []
+            results = dict()
             for key,solver in self._solvers.items ():
-                res = self._schedule.runSolver (solver,smtfile,self._run_parameters["timeout"])
-                ll.append (res)                
-            for r in ll:
-                # check if it is handled by a scheduler
-                if hasattr(r, 'wait'):
-                    r.wait ()
+                results[key] = self._schedule.runSolver (solver,[smtfile],[self._run_parameters["timeout"]])
 
+            if len(list(results.keys())) > 0 and hasattr(results[list(results.keys())[0]], 'ready'):
+                while not all([results[k].ready() for k in results.keys()]):
+                    pass
+
+            f_results = dict()
+            for solver,res in results.items():
+                if hasattr(res,'get'):
+                    r = res.get()[0]
+                else:
+                    r = res[0]
+                f_results[solver] =  {"r_id" : None, "result" : r.getResult(), "time" : r.getTime(), "model" : r.getModel(), "verified": None}
+            return f_results
+
+            """
             for r in ll:    
                 res = self._schedule.interpretSolverRes (r)
                 if res != None:
                     self._storage.storeResult (res,smtfile,solver)
             return self._storage._fetchResultsForBenchmarkIdFromDB(b_id)
+            """
         return dict()
 
     def getResultsForInstance(self,smtfile):
@@ -47,7 +57,7 @@ class SolverInteraction:
 
         # check if all results are verified
         if any(True if x["verified"] == None else False for x in results.values()):
-            v_res = self._verifyResults(smtfile,results)
+            results = self._verifyResults(smtfile,results)
 
         # cvc4 as verifier fails sometimes due to smtlib 2.6 ouput!
         return results
@@ -64,20 +74,25 @@ class SolverInteraction:
                 r_values[True]+=1
                 if model_verified:
                     verified_once = True
-                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.VerifiedSAT)
+                    #self._storage.storeVerified (r,smtquery.solvers.solver.Verified.VerifiedSAT)
+                    r["verified"] = smtquery.solvers.solver.Verified.VerifiedSAT
                 else: 
-                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.InvalidModel)
+                    #self._storage.storeVerified (r,smtquery.solvers.solver.Verified.InvalidModel)
+                    r["verified"] = smtquery.solvers.solver.Verified.InvalidModel
             elif r["result"] == smtquery.solvers.solver.Result.NotSatisfied:
                 r_values[False]+=1
                 if verified_once:
                     already_set.add(s)
-                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.SoundnessIssue)
+                    #self._storage.storeVerified (r,smtquery.solvers.solver.Verified.SoundnessIssue)
+                    r["verified"] = smtquery.solvers.solver.Verified.SoundnessIssue
         if verified_once:
             for s in set(results.keys()).difference(already_set):
                 if results[s]["result"] == smtquery.solvers.solver.Result.NotSatisfied:
-                    self._storage.storeVerified (results[s],smtquery.solvers.solver.Verified.SoundnessIssue)
+                    results[s]["verified"] = smtquery.solvers.solver.Verified.SoundnessIssue
+                    #self._storage.storeVerified (results[s],smtquery.solvers.solver.Verified.SoundnessIssue)
                 else: 
-                    self._storage.storeVerified (results[s],smtquery.solvers.solver.Verified.Unverified)
+                    #self._storage.storeVerified (results[s],smtquery.solvers.solver.Verified.Unverified)
+                    results[s]["verified"] = smtquery.solvers.solver.Verified.Unverified
         
         # majority vote
         majority = None
@@ -88,10 +103,19 @@ class SolverInteraction:
                 majority = smtquery.solvers.solver.Result.NotSatisfied
             for s,r in results.items():
                 if r["result"] == majority:
-                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Majority)
+                    #self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Majority)
+                    r["verified"] = smtquery.solvers.solver.Verified.Majority
+
                 else:
-                    self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Unverified)
-        return verified_once or majority
+                    #self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Unverified)
+                    r["verified"] = smtquery.solvers.solver.Verified.Unverified
+
+        # check everythings set
+        for s,r in results.items():
+            if r["verified"] == None:
+                r["verified"] = smtquery.solvers.solver.Verified.Unverified
+
+        return results #verified_once or majority
 
 
     def _verifyModel(self,smtfile,result):
@@ -133,3 +157,8 @@ class SolverInteraction:
             return s[len("sat("):-1]
         else:
             return s[len("("):-1]
+
+
+
+def getResultsForInstance(smtfile):
+    return SolverInteraction().getResultsForInstance(smtfile)

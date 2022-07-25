@@ -152,7 +152,9 @@ class Interpreter:
 
             results = [r.get() for r in ll if r.get() != None]
             progress.message (f"{len(results)} out of {total_instances} instances:\n")
-            #print(results)
+            progress.message (f"--------------------------------------------------\n")
+            for r in results:
+                progress.message (f"{r}\n")
 
 
     def visitExtractNode (self,node):
