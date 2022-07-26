@@ -18,6 +18,7 @@ class Configuration:
                  runParameters,
                  verifiers,
                  filepath,
+                 cwd,
                  ):
         self._solvers = solvers
         self._storage = storage
@@ -25,6 +26,7 @@ class Configuration:
         self._runParameters = runParameters
         self._verifiers = verifiers
         self._filepath = filepath
+        self._cwd = cwd
 
     def getSolvers (self):
         return self._solvers
@@ -43,6 +45,9 @@ class Configuration:
 
     def getSMTFilePath(self):
         return self._filepath
+
+    def getCurrentWorkingDirectory(self):
+        return self._cwd
 
     def cleanup(self):
         self._scheduler.close()
@@ -80,9 +85,10 @@ def createStorage (data):
 
         
         
-def readConfig (conffile):
+def readConfig (conffile,cwd):
     global conf
     data = yaml.load (conffile,Loader=yaml.Loader)
+    data["SMTStore"]["cwd"] = cwd
 
     # tmp store data
     with open("./data.pickle", 'wb') as handle:
@@ -94,7 +100,7 @@ def readConfig (conffile):
     runParameters = data["runParameters"]
     verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
     filepath = data["SMTStore"]["root"]
-    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath)
+    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd)
     storage.makeSolverInterAction()
 
 # needed to potentially recreate the Configuration in a multiprocessing environment
@@ -112,7 +118,8 @@ def _readConfigPath():
     runParameters = data["runParameters"]
     verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
     filepath = data["SMTStore"]["root"]
-    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath)
+    cwd = data["SMTStore"]["cwd"]
+    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd)
     storage.makeSolverInterAction()
     return conf
 

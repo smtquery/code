@@ -27,12 +27,13 @@ if __name__ == "__main__":
     
     filelocator = smtquery.config.FileLocator ([args.conf])
     with open (filelocator.findFile("conf.yml")) as ff:
-        smtquery.config.readConfig (ff)
+        smtquery.config.readConfig (ff,os.path.abspath(os.getcwd()))
     
+    """
     if "func" in args:
         args.func (args)
-
     """
+
     try:
         if "func" in args:
             args.func (args)
@@ -41,6 +42,5 @@ if __name__ == "__main__":
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         logging.debug(f"Crash {exc_type} {fname} {exc_tb.tb_lineno}")
         print(e)
-    """
     smtquery.config.getConfiguration().cleanup()
 

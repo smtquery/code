@@ -174,7 +174,7 @@ class DBFSStorage:
                         
                         id = conn.execute (self._instance_table.insert ().values (
                             name = f"{bench}:{track}:{instance}",
-                            path = instancepath,
+                            path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                             track_id = track_id
                         )).inserted_primary_key[0]
 
@@ -230,7 +230,7 @@ class DBFSStorage:
                         
                         id = conn.execute (self._instance_table.insert ().values (
                             name = f"{bench}:{track}:{instance}",
-                            path = instancepath,
+                            path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                             track_id = track_id
                         )).inserted_primary_key[0]
 

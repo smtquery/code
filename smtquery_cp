@@ -1,0 +1,5 @@
+#/bin/bash
+containerName=`docker ps --format '{{.Names}}#{{.Image}}' | grep smtquery | rev | cut -c 6- | rev`
+docker cp ${containerName}:/smtquery/output $1
+
+
