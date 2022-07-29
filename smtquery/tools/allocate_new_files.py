@@ -8,7 +8,7 @@ def addArguments (parser):
     return 
 
 def run (arguments):
-    storage = smtquery.config.conf.getStorage ()
+    storage = smtquery.config.getConfiguration().getStorage ()
     storage.allocate_new_files_db ()
     
 

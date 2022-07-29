@@ -2,40 +2,48 @@ import smtquery.ui
 from smtquery.solvers.solver import *
 
 class CactusPlot:
-    _results = dict()
     output_folder = "./output/cactus/"
 
     @staticmethod
     def getName ():
         return "CactusPlot"
 
-    def finalise(self,total):
-        self._generateCactus(self._generateCactusData(),self.output_folder)
+    def finalise(self,results,total):
+        self._generateCactus(self._generateCactusData(results),self.output_folder)
         
     def __call__  (self,smtfile):
         # collect results
-        _storage = smtquery.config.conf.getStorage ()
+        _storage = smtquery.config.getConfiguration().getStorage ()
         b_input = smtfile.getName().split(":")
         b_smtfile = _storage.searchFile(b_input[0],b_input[1],b_input[2])
+        results = dict()
         if b_smtfile != None:
             b_id = b_smtfile.getId() 
-            res = _storage.getResultsForBenchmarkId(b_id)
+            res = _storage.getResultsForInstance(smtfile)
             for s in res.keys():
-                if s not in self._results:
-                    self._results[s] = []
+                if s not in results:
+                    results[s] = []
                 if res[s]["result"] in [Result.NotSatisfied,Result.Satisfied]:
-                    self._results[s]+=[(b_id,res[s]["time"])]
+                    results[s]+=[(b_id,res[s]["time"])]
+        return results
 
         #with smtquery.ui.output.makePlainMessager () as mess:
         #    mess.message (smtfile.getName())
 
-    def _generateCactusData(self):
-        self._results = {s : sorted(self._results[s], key=lambda r:r[1]) for s in self._results.keys()}
+    def _generateCactusData(self,results):
+        t_results = dict()
+        for d in results:
+            if d != None:
+                for s,entries in d.items():
+                    if s not in t_results:
+                        t_results[s] = []
+                    t_results[s]+=entries
+        results = {s : sorted(t_results[s], key=lambda r:r[1]) for s in t_results.keys()}
         cactus_data = dict()
-        for s in self._results.keys():
+        for s in results.keys():
             t_time = 0
             cactus_data[s] = []
-            for i,r in enumerate(self._results[s]):
+            for i,r in enumerate(results[s]):
                 t_time+=r[1]
                 cactus_data[s]+=[{"x" : i, "instance" : r[0], "time" : r[1], "y" : t_time }]
         return cactus_data

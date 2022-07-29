@@ -6,6 +6,7 @@ import smtquery.intel
 import smtquery.scheduling
 import smtquery.scheduling.multi
 import smtquery.scheduling.celerys
+import pickle
 
 
 
@@ -17,6 +18,7 @@ class Configuration:
                  runParameters,
                  verifiers,
                  filepath,
+                 cwd,
                  ):
         self._solvers = solvers
         self._storage = storage
@@ -24,6 +26,7 @@ class Configuration:
         self._runParameters = runParameters
         self._verifiers = verifiers
         self._filepath = filepath
+        self._cwd = cwd
 
     def getSolvers (self):
         return self._solvers
@@ -43,6 +46,12 @@ class Configuration:
     def getSMTFilePath(self):
         return self._filepath
 
+    def getCurrentWorkingDirectory(self):
+        return self._cwd
+
+    def cleanup(self):
+        self._scheduler.close()
+
 def createSolvers (solverdata):
     solverarr = {}
     
@@ -55,6 +64,8 @@ def createFrontScheduler (data):
         scheduler = smtquery.scheduling.multi.Queue (int(data["cores"]))        
     if data["name"] == "celery":
         scheduler = smtquery.scheduling.celerys.Queue ("HH")
+    if data["name"] == "single":
+        scheduler = smtquery.scheduling.single.Queue ()
     return scheduler
         
 def createStorage (data):
@@ -70,19 +81,54 @@ def createStorage (data):
                                                        data["engine_string"]
         )
         smtquery.intel.makeIntelManager (intels) 
-
     return storage
 
         
         
-def readConfig (conffile):
+def readConfig (conffile,cwd):
     global conf
     data = yaml.load (conffile,Loader=yaml.Loader)
+    data["SMTStore"]["cwd"] = cwd
+
+    # tmp store data
+    with open("./data.pickle", 'wb') as handle:
+        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     solverarr = createSolvers (data["solvers"])
     scheduler = createFrontScheduler (data["scheduler"])
     storage = createStorage (data["SMTStore"])
     runParameters = data["runParameters"]
     verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
     filepath = data["SMTStore"]["root"]
-    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath)
-    
+    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd)
+    storage.makeSolverInterAction()
+
+# needed to potentially recreate the Configuration in a multiprocessing environment
+def _readConfigPath():
+    if os.path.isfile("./data.pickle"):
+        with open("./data.pickle", 'rb') as handle:
+            data = pickle.load(handle)
+    else:
+        raise("Data not found!")
+
+    global conf
+    solverarr = createSolvers (data["solvers"])
+    scheduler = createFrontScheduler ({"name" : "single"}) # use single processing inside to avoid children of children 
+    storage = createStorage (data["SMTStore"])
+    runParameters = data["runParameters"]
+    verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
+    filepath = data["SMTStore"]["root"]
+    cwd = data["SMTStore"]["cwd"]
+    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd)
+    storage.makeSolverInterAction()
+    return conf
+
+def getConfiguration():
+    global conf
+    if not hasattr(smtquery.config, 'conf'):
+        conf = smtquery.config._readConfigPath()
+    return conf
+
+
+
+

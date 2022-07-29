@@ -9,11 +9,12 @@ class MatchingPie:
     def getName ():
         return "MatchingPie"
 
-    def finalise(self,total):
-        self._generatePie({f"rest ({total-self._matchingCount} instances)" : total-self._matchingCount, f"matching ({self._matchingCount} instances)" : self._matchingCount})
+    def finalise(self,results,total):
+        matchingCount = sum([r  for r in results if r != None])
+        self._generatePie({f"rest ({total-matchingCount} instances)" : total-matchingCount, f"matching ({matchingCount} instances)" : matchingCount})
 
     def __call__  (self,smtfile):
-        self._matchingCount+=1
+        return 1
 
     def _generatePie(self,pie_data):
         import os

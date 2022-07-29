@@ -1,7 +1,6 @@
 import smtquery.config
 import smtquery.qlang.predicates
 
-
 class InstanceEnumerator:
     def __init__ (self):
         self._subgens = []
@@ -16,7 +15,7 @@ class InstanceEnumerator:
 
 class InstanceSelector:
     def Select (self,node):
-        print (node)
+        #print (node)
         node.accept (self)
         return self._res
         
@@ -28,7 +27,7 @@ class InstanceSelector:
         self._res = instances
             
     def visitBenchTrackInstances (self,node):
-        storage = smtquery.config.conf.getStorage ()
+        storage = smtquery.config.getConfiguration().getStorage ()
         for bb in storage.getBenchmarks ():
             if node.getBenchmark ().replace(":","") == bb.getName ():
                 for track in bb.tracksInBenchmark ():
@@ -37,13 +36,13 @@ class InstanceSelector:
                 
         
     def visitBenchInstances (self,node):
-        storage = smtquery.config.conf.getStorage ()
+        storage = smtquery.config.getConfiguration().getStorage ()
         for bb in storage.getBenchmarks ():
             if node.getBenchmark () == bb.getName ():
                 self._res = bb.filesInBenchmark ()
     
     def visitAllInstances (self,node):
-        storage = smtquery.config.conf.getStorage ()
+        storage = smtquery.config.getConfiguration().getStorage ()
         self._res = storage.allFiles ()
         
 class CheckPredicate:
@@ -107,9 +106,11 @@ class Attribute:
         self._res = []
         self._file = smtfile
         self._attri.accept(self)
-        pushres (self._res)
-        self._res = []
         
+        return self._res
+        #pushres (self._res)
+        #self._res = []
+
     def visitAttributeList (self,node):
         for i in node.children ():
             i.accept(self)
@@ -117,8 +118,6 @@ class Attribute:
     def visitAttribute (self,node):
         self._res.append (node (self._file))
         
-    
-
 class Interpreter:
     def Run (self,node, pushres):
         self._res = []
@@ -128,21 +127,65 @@ class Interpreter:
     def visitSelect (self,node):
         instances = InstanceSelector().Select (node.getInstance ())
         attriextractor = Attribute (node.getAttributes ())
+        total_instances = 0
 
-        plain_pred = node.getPredicate ()
-        if plain_pred != None:
-            pred = CheckPredicate (plain_pred)
-            for i in instances.enumerate ():
-                #print (i)
-                if pred.Check (i) == smtquery.qlang.predicates.Trool.TT:
-                    attriextractor.Extract (i,self._push)
-        else:
-            for i in instances.enumerate ():
-                attriextractor.Extract (i,self._push)        
+        schedule = smtquery.config.getConfiguration().getScheduler ()
+        ll = []
+        with smtquery.ui.output.makeProgressor () as progress:
+            plain_pred = node.getPredicate ()
+            if plain_pred != None:
+                pred = CheckPredicate (plain_pred)
+                for i in instances.enumerate ():
+                    total_instances+=1
+                    progress.message (f"Submitting {i.getName()}")
+                    res = schedule.runSelect(pred,attriextractor,i,self._push)
+                    ll.append (res)
+            else:
+                for i in instances.enumerate ():
+                    total_instances+=1
+                    progress.message (f"Submitting {i.getName()}")
+                    res = schedule.runSelectNoPred(attriextractor,i,self._push)
+                    ll.append (res) 
+            progress.message (f"Waiting for results ...")
+            for r in ll:
+                r.wait ()
+
+            results = [r.get() for r in ll if r.get() != None]
+            progress.message (f"{len(results)} out of {total_instances} instances:\n")
+            progress.message (f"--------------------------------------------------\n")
+            for r in results:
+                progress.message (f"{r}\n")
 
 
     def visitExtractNode (self,node):
         instances = InstanceSelector().Select (node.getInstances ())
+        total_checked_instances = 0
+
+        schedule = smtquery.config.getConfiguration().getScheduler ()
+        ll = []
+        with smtquery.ui.output.makeProgressor () as progress:
+            plain_pred = node.getPredicates ()
+            if plain_pred != None:
+                pred = CheckPredicate (plain_pred)
+                for i in instances.enumerate ():
+                    progress.message (f"Submitting {i.getName()}")
+                    total_checked_instances+=1
+                    res = schedule.runExtract(pred,node,i)
+                    ll.append (res)
+            else:
+                for i in instances.enumerate ():
+                    progress.message (f"Submitting {i.getName()}")
+                    total_checked_instances+=1
+                    res = schedule.runExtractNoPred(node,i)
+                    ll.append (res) 
+            progress.message (f"Waiting for results ...\n")
+            for r in ll:
+                r.wait ()
+            node.getExtractFunc ().finalise([r.get() for r in ll],total_checked_instances)
+        
+        ###
+
+        """
         plain_pred = node.getPredicates ()
         total_checked_instances = 0
         if plain_pred != None:
@@ -157,8 +200,7 @@ class Interpreter:
                 total_checked_instances+=1
                 node.getExtractFunc () (node.getApply  () (i))
             node.getExtractFunc ().finalise(total_checked_instances)
-
-    
+        """
     
 
     

@@ -5,6 +5,7 @@ import smtquery.intel
 
 from smtquery.smtcon.expr import *
 from smtquery.smtcon.exprfun import *
+from smtquery.intel.plugins.probes import Probes
 
 
 class RestrictConstraints:
@@ -14,7 +15,7 @@ class RestrictConstraints:
     def __call__  (self,smtfile,collect_kinds):
         #collect_kinds = [Kind.LENGTH_CONSTRAINT,Kind.WEQ] #[Kind.REGEX_CONSTRAINT,Kind.WEQ]
         new_ast = ASTRef()
-        ast = smtfile.Probes._get()
+        ast = Probes().getIntel(smtfile)
         for ass in ast:
             new_ass_list = []
             if ass.kind() == Kind.WEQ and ass.kind() in collect_kinds:
@@ -30,7 +31,7 @@ class RestrictConstraints:
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
             handle.write(str(new_ast))
         new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(),self.root+"/"+self._getOutputFilePath(smtfile))
-        smtquery.intel.intels.getIntel(new_smtfile)
+        Probes().getIntel(new_smtfile)
         
         return new_smtfile
     

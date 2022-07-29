@@ -13,10 +13,10 @@ def addArguments (parser):
 
 
 def run (args):
-    solver = smtquery.config.conf.getSolvers ()[args.solver]
-    storage = smtquery.config.conf.getStorage ()
-    schedule = smtquery.config.conf.getScheduler ()
-    run_parameters = smtquery.config.conf.getRunParameters ()
+    solver = smtquery.config.getConfiguration().getSolvers ()[args.solver]
+    storage = smtquery.config.getConfiguration().getStorage ()
+    schedule = smtquery.config.getConfiguration().getScheduler ()
+    run_parameters = smtquery.config.getConfiguration().getRunParameters ()
 
     file = storage.searchFile (args.benchmark,args.track,args.smtfile)
 

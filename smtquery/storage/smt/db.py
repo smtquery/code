@@ -2,12 +2,13 @@ import os
 import shutil
 import sqlalchemy
 import datetime
+import time
 import smtquery.solvers.solver
 import hashlib
 import smtquery.config
 import smtquery.ui
 import smtquery.intel
-    
+from smtquery.utils.solverIntegration import SolverInteraction
 
 class SMTFile:
     def __init__(self,name,filepath,id):
@@ -82,8 +83,15 @@ class Benchmark:
     def getName (self):
         return self._name
 
+# needed for multiprocessing
+def smtfile_getName(smtfile):
+    return smtfile.getName()
 
+def smtfile_hashContent(smtfile):
+    return smtfile.hashContent()
 
+def smtfile_SMTString(smtfile):
+    return smtfile.SMTString()
     
 class DBFSStorage:
     def __init__ (self,root,enginestring,intels = None):
@@ -130,6 +138,8 @@ class DBFSStorage:
 
         self._makesmt = lambda name,filepath,id: smtquery.intel.intels.getIntel (SMTFile(name,filepath,id))
 
+    def makeSolverInterAction(self):
+        self._solverInteraction = SolverInteraction()
         
     def initialise_db (self):
         with  smtquery.ui.output.makeProgressor () as progress:
@@ -164,7 +174,7 @@ class DBFSStorage:
                         
                         id = conn.execute (self._instance_table.insert ().values (
                             name = f"{bench}:{track}:{instance}",
-                            path = instancepath,
+                            path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                             track_id = track_id
                         )).inserted_primary_key[0]
 
@@ -220,7 +230,7 @@ class DBFSStorage:
                         
                         id = conn.execute (self._instance_table.insert ().values (
                             name = f"{bench}:{track}:{instance}",
-                            path = instancepath,
+                            path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                             track_id = track_id
                         )).inserted_primary_key[0]
 
@@ -254,7 +264,33 @@ class DBFSStorage:
             model = result.getModel (),
             date = datetime.datetime.now ()
         )
-        conn.execute (query)
+        # busy wait for multiprocessing 
+        while True:
+            try:
+                conn.execute (query)
+                break
+            except Exception as e:
+                print(f"{os.getpid()} - I'm waiting... DB's locked!")
+                time.sleep(1)   
+
+    def storeResultDict (self,result,smtfile,solvername):
+        conn = self._engine.connect ()
+        query = self._result_table.insert().values (
+            instance_id = smtfile.getId (),
+            result = result["result"],
+            solver = solvername,
+            time = result["time"],
+            model = result["model"],
+            date = datetime.datetime.now ()
+        )
+        # busy wait for multiprocessing 
+        while True:
+            try:
+                conn.execute (query)
+                break
+            except Exception as e:
+                print(f"{os.getpid()} - I'm waiting... DB's locked!")
+                time.sleep(1) 
 
     def storeVerified (self,result,verified):
         conn = self._engine.connect ()
@@ -262,25 +298,40 @@ class DBFSStorage:
             verification_result_id = result["r_id"],
             result = verified,
             date = datetime.datetime.now ()
-        )    
-        conn.execute (query)
+        )
+
+        # busy wait for multiprocessing 
+        while True:
+            try:
+                conn.execute (query)
+                break
+            except Exception as e:
+                print(f"{os.getpid()} - I'm waiting... DB's locked!")
+                time.sleep(1)    
 
     def storagePredicates (self):
         return smtquery.intel.intels.predicates ()
 
     def storageAttributes (self):
         return {
-            "Name" : lambda smtfile: smtfile.getName (),
-            "Hash" : lambda smtfile: smtfile.hashContent (),
-            "Content" : lambda smtfile: smtfile.SMTString (),            
+            "Name" : smtfile_getName,
+            "Hash" : smtfile_hashContent,
+            "Content" : smtfile_SMTString,            
         }
 
     # queries
-    def getResultsForBenchmarkId(self,id):
+    def _fetchResultsForBenchmarkIdFromDB(self,id,only_latest_results=True):
         conn = self._engine.connect ()
         res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id).order_by(self._result_table.c.date.desc()))
         results = dict()
+        seen = set()
         for row in res.fetchall ():
+            if only_latest_results:
+                if row.solver in seen:
+                    continue
+                else:
+                    seen.add(row.solver)
+
             # fetch verified
             verified = None
             v_res = conn.execute (self._validated_table.select ().where ( self._validated_table.c.verification_result_id == row.id).order_by(self._validated_table.c.date.desc()))
@@ -288,9 +339,31 @@ class DBFSStorage:
             if len(v_results) > 0:
                 verified = v_results[0].result
             results[row.solver] = {"r_id" : row.id, "result" : row.result, "time" : row.time, "model" : row.model, "verified": verified}
-
         return results
 
+    def _getResultIdForSolverBenchmark(self,id,solvername,only_latest_results=True):
+        conn = self._engine.connect ()
+        res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id and self._result_table.c.solver == solvername).order_by(self._result_table.c.date.desc()))
+        for row in res.fetchall():
+            return row[0]
+        return None
+        
+    def getResultsForBenchmarkId(self,id):
+        return self._fetchResultsForInstance(id)
+
+    # use solver interaction to obtain results if they aren't present
+    def getResultsForInstance(self,smtfile):
+        results = self._solverInteraction.getResultsForInstance(smtfile)
+        for solvername,res in results.items():
+            if res["r_id"] == None:
+                self.storeResultDict (res,smtfile,solvername)
+                res["r_id"] = self._getResultIdForSolverBenchmark(smtfile.getId(),solvername)
+                self.storeVerified (res,res["verified"])
+        return results
+
+
+    def getResultForSolver(self,smtfile,solvername):
+        return self.getResultsForInstance(smtfile)[solvername] #self._solverInteraction.getResultForSolver(smtfile,solvername)
 
 
 

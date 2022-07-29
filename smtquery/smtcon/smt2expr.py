@@ -8,6 +8,20 @@ class SMTtoSExpr:
 
 ######
 
+#test
+
+class Reference:
+    def __init__(self, val):
+        self._value = val # just refers to val, no copy
+
+    def get(self):
+        return self._value
+
+    def set(self, val):
+        self._value = val
+
+###
+
 
 import z3
 class Z3SMTtoSExpr(SMTtoSExpr):
@@ -24,7 +38,10 @@ class Z3SMTtoSExpr(SMTtoSExpr):
         return None
 
     def getZ3AST(self,file_path):
+        #try:
         return z3.parse_smt2_file(file_path)
+        #except Exception as e:
+        #    print(e,file_path)
 
     def getZ3ASTFromText(self,text):
         return z3.parse_smt2_string(text)
@@ -71,9 +88,40 @@ class Z3SMTtoSExpr(SMTtoSExpr):
         passed = dict()
         tree = dict()
 
+        t_expr = self._prepareExpr(expr,node_id)
+
+        node_id+=1
+        root = node_id
+        waiting = [(Reference(t_expr),expr.children(),node_id)]
+
+        while len(waiting) > 0:
+            e_ref,children,t_id = waiting.pop(0)
+            e = e_ref.get()
+
+            for c in children:
+                node_id+=1
+                t_c = self._prepareExpr(c,node_id)
+                e.vChildren+=[t_c]
+                
+                c_children = c.children()
+                if len(c_children) > 0:
+                    waiting+=[(Reference(t_c),c_children,node_id)]
+                    #tree[t_id]+=[node_id]
+            e_ref.set(e)
+
+        #print(t_expr)
+
+        return t_expr
+        """
+        node_id = node_id_ref[0]
+        passed = dict()
+        tree = dict()
+
+
         node_id+=1
         root = node_id
         waiting = [(expr,node_id)]
+
 
         while len(waiting) > 0:
             e,t_id = waiting.pop(0)
@@ -84,16 +132,26 @@ class Z3SMTtoSExpr(SMTtoSExpr):
                 waiting+=[(c,node_id)]
                 tree[t_id]+=[node_id]
 
+
+
         # rebuild tree
         node_id_ref = [node_id]
         processed = set({root})
+        set(tree.keys())
+
         while processed != set(tree.keys()):
-            for i in set(j for j in tree.keys() if len(tree[j]) == 0):
+            for i in set(j for j in tree.keys() if len(tree[j]) == 0 and j not in processed):
+                print(i)
                 processed.add(i)
                 for ii in set(j for j in tree.keys() if i in tree[j]):
                     tree[ii].remove(i)
                     passed[ii].vChildren+=[passed[i]]
+        
         return passed[root]
+        """
+
+
+
 
     def _prepareExpr(self,expr,node_id):
         sort = self.getSort(expr.sort())

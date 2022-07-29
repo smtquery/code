@@ -1,4 +1,3 @@
-
 import smtquery.smtcon.smt2expr
 import smtquery.smtcon.exprfun
 from smtquery.smtcon.expr import Kind
@@ -9,7 +8,9 @@ import pickle
 import tempfile
 import smtquery.smtcon.smt2expr
 from functools import partial
-
+import logging
+from smtquery.qlang.trool import *
+from datetime import datetime
 
 
 class Probes:
@@ -20,6 +21,7 @@ class Probes:
         self.use_cache = True
 
     def _storeAST(self,smtfile,ast):
+        logging.debug(f"writing AST for {smtfile.getName()}")
         rel_filepath = ''.join(f"/{f}" for f in smtfile.getName().split(":")[:-1])
         filename = smtfile.getName().split(":")[-1]
         pickle_file_path = f"{self._pickleBasePath}{rel_filepath}/{smtfile.hashContent()}_{filename}.pickle"
@@ -34,12 +36,20 @@ class Probes:
         rel_filepath = ''.join(f"/{f}" for f in smtfile.getName().split(":")[:-1])
         filename = smtfile.getName().split(":")[-1]
         pickle_file_path = f"{self._pickleBasePath}{rel_filepath}/{smtfile.hashContent()}_{filename}.pickle"
+        logging.debug(f"accessing {smtfile.getName()} as pickle file {pickle_file_path}")
+
         if not os.path.exists(self._pickleBasePath+rel_filepath):
-            os.makedirs(self._pickleBasePath+rel_filepath)
+            try:
+                os.makedirs(self._pickleBasePath+rel_filepath)
+            except Exception as e:
+                pass
+            
         if os.path.isfile(pickle_file_path):
+            logging.debug("found pickle file")
             with open(pickle_file_path, 'rb') as handle:
                 return pickle.load(handle)
         else:
+            logging.debug("build AST")
             pr = self._smtprobe.getAST (filepath)
             self._storeAST(smtfile,pr)
             return pr
@@ -63,7 +73,7 @@ class Probes:
             "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
             "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
             "#variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
-            "pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
+            #"pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
         }
 
     def predicates (self):
@@ -72,8 +82,9 @@ class Probes:
             "hasWEQ" : partial(hasKind,Kind.WEQ),
             "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
             "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT),
-            "isSimpleRegex" : lambda smtfile: (isSimpleRegex(smtfile) and not hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
-            "isSimpleRegexConcatenation" : lambda smtfile: (isSimpleRegex(smtfile) and hasConcatenationRegex(smtfile) and TroolNot(partial(hasKind,Kind.WEQ)) and TroolNot(partial(hasKind,Kind.LENGTH_CONSTRAINT))) == True,
+            "hasHOL" : partial(hasKind,Kind.HOL_FUNCTION),
+            "isSimpleRegex" : lambda smtfile: TroolAnd(isSimpleRegex(smtfile), TroolAnd(TroolNot(hasConcatenationRegex(smtfile)),TroolAnd(TroolNot(hasKind(Kind.WEQ,smtfile)),TroolNot(hasKind(Kind.LENGTH_CONSTRAINT,smtfile))))),
+            "isSimRegexConcatenation" : lambda smtfile: TroolAnd(isSimpleRegex(smtfile), TroolAnd(hasConcatenationRegex(smtfile),TroolAnd(TroolNot(hasKind(Kind.WEQ,smtfile)),TroolNot(hasKind(Kind.LENGTH_CONSTRAINT,smtfile))))),
             "hasAtLeast5Variables" :  lambda smtfile: (hasAtLeastCountStringVariables(smtfile,5))
         }
 
@@ -88,13 +99,13 @@ class Probes:
         return "0.0.1"
     
 def hasKind(kind,smtfile):
-    if kind in smtfile.Probes.get_intel()["has"]:
+    if kind in Probes().getIntel(smtfile).get_intel()["has"]: #smtfile.Probes.get_intel()["has"]:
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
 
 def hasAtLeastCountStringVariables(smtfile,var_count=5):
-    vcs = smtfile.Probes.get_intel()["#variables"]
+    vcs = Probes().getIntel(smtfile).get_intel()["#variables"]
     if Sort.String in vcs:
         if len(set(vcs[Sort.String].keys())) >= var_count:
             return smtquery.qlang.predicates.Trool.TT
@@ -103,13 +114,14 @@ def hasAtLeastCountStringVariables(smtfile,var_count=5):
 
 # Regex
 def isSimpleRegex(smtfile):
-    if not smtfile.Probes.get_intel()["regex"]["complement"]:
+    if not Probes().getIntel(smtfile).get_intel()["regex"]["complement"]:
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
 
 def hasConcatenationRegex(smtfile):
-    if not smtfile.Probes.get_intel()["regex"]["concatenation"]:
+    if Probes().getIntel(smtfile).get_intel()["regex"]["concatenation"]:
+        print(Probes().getIntel(smtfile).get_intel()["regex"])
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
@@ -117,21 +129,20 @@ def hasConcatenationRegex(smtfile):
 def isQuadratic(smtfile,max_vars=2):
     qudratic = True
 
-    """
     # check quadtratic without repecting the paths
-    vcs = smtfile.Probes.get_intel()["#variables"]
+    vcs = Probes().getIntel(smtfile).get_intel()["#variables"]
     if Sort.String in vcs:
         if not all([vcs[Sort.String][var] <= max_vars for var in vcs[Sort.String].keys()]):
             return smtquery.qlang.predicates.Trool.FF
     return smtquery.qlang.predicates.Trool.TT
+    
     """
-
-    for pv in [pv[Sort.String] for pv in smtfile.Probes.get_intel()["pathVars"] if Sort.String in pv]:
-        qudratic = qudratic and all([pv[var] <= max_vars for var in pv.keys()])
+    for pv in [pv[Sort.String] for pv in Probes().getIntel(smtfile).get_intel()["pathVars"] if Sort.String in pv]:
+        qudratic = all([pv[var] <= max_vars for var in pv.keys()]) and qudratic
     if qudratic:
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
-
+    """
 def makePlugin ():
     return Probes

@@ -1,24 +1,24 @@
 # build image
-docker build . -t basc
+docker build . -t smtquery
 # start container
-docker run -it -d basc /bin/bash
+docker run -it -d smtquery /bin/bash
 
 
 # Executing Queries
 ## Linux/OSX
-chmod +x basc_docker
-chmod +x basc_cp
+chmod +x smtquery_exe
+chmod +x smtquery_cp
 
-# To execute basc and use qlang simply type (always make sure your container is running)
-./basc_exe
+# To execute smtquery and use qlang simply type (always make sure your container is running)
+./smtquery_exe
 
 # To copy output files to some local directory type
-./basc_cp <destination_folder>
+./smtquery_cp <destination_folder>
 
 
 ## Windows:
 # Find your container ID (image basc)
 docker container ls -a
 
-# to use BASC and QLang use (always make sure your container is running): 
-docker exec -it <YOUR_CONTAINER_ID> python3 /BASC/bin/smtquery qlang
+# to use smtquery and QLang use (always make sure your container is running): 
+docker exec -it <YOUR_CONTAINER_ID> python3 /smtquery/bin/smtquery qlang
