@@ -578,6 +578,128 @@ class RegexStructure(ExprFun):
                                                                                                lst1 if element in lst2]
 
 
+
+
+class InstanceInfo(ExprFun):
+
+    def __init__(self):
+        super().__init__("InstanceInfo", "0.0.1")
+
+    def apply(self, expr, data):
+        if expr.kind() == Kind.WEQ:
+            data_weq = self.processWEQ(expr.children()[0],expr.children()[1])
+        elif expr.kind() == Kind.REGEX_CONSTRAINT:
+            data_regex = self.processRegex(expr.children()[0],expr.children()[1])
+            #print(data_regex)
+        elif expr.kind() == Kind.OTHER and expr.decl() == "and":
+            if "and" not in data:
+                data["bool"]["and"] = 0
+            data["bool"]["and"]+=1
+
+
+        return data
+
+    def merge(self, expr, data):
+        d_new = {"bool" : {"and" : 0, "or" : 0}, "regex" : {"length": 0, "star_depth": 0, "union_breadth": 0}, "weq" : {"length" : 0, "alphabet" : set(), "variables" : set()}}
+        for d in data:
+            for k in d.keys():
+                pass
+        return d_new
+
+
+    def _getStringInfo(self,s):
+        data = {"length" : 0, "alphabet" : set(), "variables" : set()}
+        waiting = [s]
+        while len(waiting) > 0:
+            w = waiting.pop(0)
+            if w.is_variable():
+                data["variables"].add(w.decl())
+                data["length"]+=1
+            elif w.is_const():
+                data["alphabet"].update(set(a for a in w.params()[0][1:-1]))
+                data["length"]+=len(str(w.params()[0][1:-1]))
+            else:
+                waiting+=[u for u in w.vChildren]
+
+        return data
+
+    def processWEQ(self,lhs,rhs):
+        data_lhs = self._getStringInfo(lhs)
+        data_rhs = self._getStringInfo(rhs)
+        return {"length" : data_lhs["length"]+data_rhs["length"], "alphabet" : data_lhs["alphabet"].union(data_rhs["alphabet"]), "variables" : data_lhs["variables"].union(data_rhs["variables"])}
+
+    def processRegex(self,pat,regex):
+
+
+        paths = self._getAllPaths(self._buildRegLanGraph(regex), (0, regex.decl()))
+        data =  {"length": 0, "star_depth": 0, "union_breadth": 0}
+        for p in paths:
+            print(p)
+            # collect constants
+            try:
+                i = p.index("str.to_re")
+                data["length"] = max(len(p[i+1]),data["length"])
+            except:
+                pass
+            data["star_depth"] = max(len([pp for pp in p if pp == "re.*" or pp == "re.+"]),data["star_depth"])
+            data["union_breadth"] = max(len([pp for pp in p if pp == "re.union"]),data["union_breadth"])
+
+        data["pattern"] = self._getStringInfo(pat)
+        return data
+
+    # pattern analysis
+    def _isSimplePattern(self, expr, sp=True):
+        if len(expr.children()) > 0:
+            if expr.decl() in ["str.substr"]:
+                return False
+            if expr.decl() not in ["At"]:
+                for c in expr.children():
+                    sp = sp and self._isSimplePattern(c)
+        else:
+            sp = sp and expr.is_const()
+        return sp
+
+    # regex analysis
+    def _buildRegLanGraph(self, regex, idx=0):
+        edges = dict()
+        if len(regex.children()) > 0:
+            v1 = regex.decl()
+            thisIdx = idx
+            edges[(thisIdx, v1)] = set()
+            for v2 in regex.children():
+                idx += 1
+                if v2.is_const():
+                    desc = v2.params()[0][1:-1]
+                else:
+                    desc = v2.decl()
+                edges[(thisIdx, v1)].add((idx, desc))
+                edges = {**edges, **self._buildRegLanGraph(v2, idx)}  # edges | buildRegLanGraph(v2,idx)
+        return edges
+
+    def _getAllPaths(self, graph, start):
+        paths = []
+        waiting = [[start]]
+        while len(waiting) > 0:
+            p = waiting.pop()
+            v1 = p[-1]
+            if v1 in graph:
+                # it does not contain cycles!!!
+                for v2 in graph[v1]:
+                    waiting += [p + [v2]]
+            else:
+                paths += [[x[1] for x in p]]
+        return paths
+
+    def _sublist(self, lst1, lst2):
+        return len(lst2) >= len(lst1) and [element for element in lst2 if element in lst1] == [element for element in
+                                                                                               lst1 if element in lst2]
+
+
+
+
+
+
+
 class Plot(ExprFun):
     def __init__(self):
         super().__init__ ("Plot","0.0.1")    

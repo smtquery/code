@@ -18,7 +18,7 @@ class Probes:
         super().__init__ ()
         self._smtprobe = smtquery.smtcon.smt2expr.Z3SMTtoSExpr ()
         self._pickleBasePath = "smtquery/data/pickle"
-        self.use_cache = True
+        self.use_cache = False #True
 
     def _storeAST(self,smtfile,ast):
         logging.debug(f"writing AST for {smtfile.getName()}")
@@ -71,8 +71,9 @@ class Probes:
     def intels (self):
         return {
             "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
-            "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
-            "#variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
+            "info" : (smtquery.smtcon.exprfun.InstanceInfo(),dict()),
+            #"regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
+            #"#variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
             #"pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
         }
 
