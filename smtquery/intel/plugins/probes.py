@@ -121,7 +121,6 @@ def isSimpleRegex(smtfile):
 
 def hasConcatenationRegex(smtfile):
     if Probes().getIntel(smtfile).get_intel()["regex"]["concatenation"]:
-        print(Probes().getIntel(smtfile).get_intel()["regex"])
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF
