@@ -22,6 +22,13 @@ class Reference:
 
 ###
 
+class ParserError(Exception):
+    def __init__(self,file_path,msg):
+        self.msg = msg
+        self.file_path = file_path
+    def __str__(self):
+        return f"Error while parsing {self.file_path}: {self.msg}"
+
 
 import z3
 class Z3SMTtoSExpr(SMTtoSExpr):
@@ -38,10 +45,11 @@ class Z3SMTtoSExpr(SMTtoSExpr):
         return None
 
     def getZ3AST(self,file_path):
-        #try:
-        return z3.parse_smt2_file(file_path)
-        #except Exception as e:
-        #    print(e,file_path)
+        try:
+            ctx = z3.Context()
+            return z3.parse_smt2_file(file_path,ctx=ctx)
+        except Exception as e:
+            raise ParserError(file_path,f"{e}")
 
     def getZ3ASTFromText(self,text):
         return z3.parse_smt2_string(text)

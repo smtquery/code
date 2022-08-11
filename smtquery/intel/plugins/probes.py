@@ -67,7 +67,7 @@ class Probes:
             for (name,c) in self.intels().items():
                 self.addIntel(smtfile,pr,c[0],c[1],name)
             return pr
-
+        
     def intels (self):
         return {
             "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
