@@ -20,7 +20,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install dependencies:
 RUN python3 setup.py develop
-RUN pip3 install sqlalchemy pyyaml z3-solver graphviz celery matplotlib tabulate pathos
+RUN pip3 install sqlalchemy==1.4.40 pyyaml z3-solver graphviz celery matplotlib tabulate pathos
 
 # Link benchmarks used in the paper
 # uncomment the following lines to use our benchmarks, database, and cached ASTS
