@@ -158,7 +158,7 @@ def extractFeat(RGX):
         tmpSymb = extractNumSymb(reg)
         tmpDepth = extractDepth(reg)
         _,_,tmpNumState = extractNumStates(reg)
-        print(tmpNumState)
+        #print(tmpNumState)
         if tmpSymb >= maxSymb:
             maxSymb = tmpSymb
         if tmpDepth >= maxDepth:
