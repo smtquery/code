@@ -1,8 +1,8 @@
 solvers:
   Z3Str3:
-    binary: /opt/venv/bin/z3
+    binary: /home/mku/SMTQUERY/venv/bin/z3 
   Z3Seq:
-    binary: /opt/venv/bin/z3
+    binary: /home/mku/SMTQUERY/venv/bin/z3
   CVC5:
     binary: /usr/bin/cvc5-Linux
 
@@ -20,4 +20,4 @@ SMTStore:
 
 scheduler:
   name: multiprocessing
-  cores: 4
+  cores: 128
