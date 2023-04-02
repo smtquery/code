@@ -3,6 +3,32 @@ from z3 import z3
 from smtquery.extract.featureExtractionFiles.generalClasses import Equation
 from smtquery.smtcon.exprfun import *
 from smtquery.smtcon.expr import Kind
+from automata.fa.nfa import NFA
+from automata.fa.dfa import DFA
+import string
+UC = string.printable
+
+def range_nfa(w1, w2):
+    # Erstelle einen neuen NFA mit einem Start- und Akzeptierzustand
+    #nfa = NFA(states={'q0', 'qf'}, input_symbols=set(UC), initial_state='q0', final_states={'qf'}, transitions={'q0': {'a': {'qf'}}})
+
+
+    # Füge für jedes Zeichen im Bereich einen Zustand und einen Übergang hinzu
+    a = (ord(w2) + 1) - ord(w1)
+
+    states = set()
+    states.add('q0')
+    states.add('qf')
+    final_states = set()
+    final_states.add('qf')
+    transitions = dict()
+    transitions['q0'] = {}
+    for c in range(ord(w1), ord(w2)+1):
+        c = chr(c)
+        transitions['q0'][c] = {}
+        transitions['q0'][c] = {'qf'}
+    return NFA(states=states, input_symbols=set(UC), initial_state='q0', final_states=final_states,
+               transitions=transitions)
 
 
 def extractWEQ(side, res):
@@ -37,84 +63,160 @@ def extractWEQ(side, res):
         return res
 
 
-def exRE(param, rgx):
-    rgx = ""
-    k = param.decl()
-    if k == "re.allchar":
-        return "a-zA-Z"
-    elif k == "re.range":
-        l = str(param.children()[0])
-        i = 0
-        while l[i] == " ":
-            i += 1
-        i = i + 1
-        j = len(l) - 1
-        while l[j] == " ":
-            j -= 1
-        l = l[i:j]
-        r = str(param.children()[1])
-        i = 0
-        while r[i] == " ":
-            i += 1
-        i = i + 1
-        j = len(r) - 1
-        while r[j] == " ":
-            j -= 1
-        r = r[i:j]
-        rgx = l + "-" + r
-    elif k == "str.to_re":
-        rgx += exRE(param.children()[0], rgx)
-    elif k == "str.to.re":
-        rgx += exRE(param.children()[0], rgx)
-    elif k == "re.++":
-        rgx += exRE(param.children()[0], rgx) + "" + exRE(param.children()[1], rgx)
-    elif k =='re.*':
-        rgx = "(" + exRE(param.children()[0], rgx) + ")*"
-    elif k == 're.+':
-        rgx += "(" + exRE(param.children()[0], rgx) + ")+"
-    elif k =='re.union':
-        rgx += "(" + exRE(param.children()[0], rgx) + ")(" + exRE(param.children()[1], rgx) + ")|"
-    elif k == "str.in_re":
-        m  = param.children()[1]
-        rgx = exRE(m, rgx)
-    elif param.is_const():
-        s = str(param)
 
-        s = s.replace("|", "k")
-        s = s.replace("*", "l")
-        s = s.replace("+", "m")
-        s = s.replace("(", "n")
-        s = s.replace(")", "o")
-        s = s.replace("\"", "p")
-        s = s.replace("'", "q")
-        s = s.replace("{", "r")
-        s = s.replace("}", "s")
-        s = s.replace(".", "t")
-        s = s.replace("´", "u")
-        s = s.replace("`", "v")
-        s = s.replace("\'", "x")
-        s = s.replace('"', "y")
-        s = s.replace('[', "z")
-        s = s.replace(']', "a")
-        i = 0
-        while s[i] == " ":
-            i += 1
-        i = i + 1
-        j = len(s) - 1
-        while s[j] == " ":
-            j -= 1
-        rgx = s[i:j]
-        if len(rgx) == 0:
-            rgx = 'w'
-        return rgx
-    elif param.is_variable():
-        return rgx
+def extractChildren(param):
 
-    return rgx
+    for i in range(len(param)):
+        op = param[i].decl()
+
+        if str(op) == "re.++":
+            children = param[i].children()
+            left = extractChildren([children[0]])
+            right = extractChildren([children[1]])
+            return left.concatenate(right)
+        elif str(op) == "re.+":
+            nfa = extractChildren(param[i].children())
+
+            new_states = set(nfa.states)
+            new_initial_state = NFA._add_new_state(new_states)
+
+            # Transitions are the same with a few additions.
+            new_transitions = dict(nfa.transitions)
+            new_transitions[new_initial_state] = {'': {nfa.initial_state}}
+            for state in nfa.final_states:
+                new_transitions[state] = dict(new_transitions.get(state, {}))
+                transition = new_transitions[state]
+                transition[''] = set(transition.get('', set()))
+                transition[''].add(nfa.initial_state)
+
+            nfa = nfa.__class__(
+                states=new_states,
+                input_symbols=nfa.input_symbols,
+                transitions=new_transitions,
+                initial_state=new_initial_state,
+                final_states=nfa.final_states)
+
+            return nfa
+
+        elif str(op) == "re.*":
+            nfa = extractChildren(param[i].children())
+            nfa = nfa.kleene_star()
+            return nfa
+        elif str(op) == "re.opt":
+            nfa = extractChildren(param[i].children())
+            nfa1 = NFA.from_regex('')
+            return nfa.union(nfa1)
+        elif str(op) == "re.inter":
+            nfa = extractChildren([param[i].children()[0]])
+            nfa1 = extractChildren([param[i].children()[1]])
+            return nfa.intersection(nfa1)
+        elif str(op) == "re.union":
+            nfa = extractChildren([param[i].children()[0]])
+            nfa1 = extractChildren([param[i].children()[1]])
+            return nfa.union(nfa1)
+        elif str(op) == "re.comp":
+            nfa = extractChildren(param[i].children())
+            dfa = DFA.from_nfa(nfa).complement(minify=False)
+            return NFA.from_dfa(dfa)
+        elif str(op) == "re.none":
+            # NFA-Objekt erstellen
+            none_nfa = NFA(states={'q0'},input_symbols=set(),transitions={},initial_state='q0',final_states=set())
+            return none_nfa
+        elif str(op) == "re.all":
+            states = {'q0'}
+            input_symbols = set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\\\"|+*/&%$')
+            transitions = {'q0': {'': {'q0'}}}
+            initial_state = 'q0'
+            final_states = {'q0'}
+
+            # NFA-Objekt erstellen
+            all_nfa = NFA(states=states,input_symbols=input_symbols,transitions=transitions,initial_state=initial_state,final_states=final_states)
+            return all_nfa
+        elif str(op) == "re.allchar":
+            states = {'q0'}
+            input_symbols = set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789')
+            transitions = {'q0': {symbol: {'q0'} for symbol in input_symbols}}
+            initial_state = 'q0'
+            final_states = {'q0'}
+            # NFA-Objekt erstellen
+            allchar_nfa = NFA(states=states,input_symbols=input_symbols,transitions=transitions,initial_state=initial_state,final_states=final_states)
+            return allchar_nfa
+        elif str(op) == "re.diff":
+            nfa1 = extractChildren([param[i].children()[0]])
+            nfa2 = extractChildren([param[i].children()[1]])
+            dfa1 = DFA.from_nfa(nfa1, minify=False)
+            dfa2 = DFA.from_nfa(nfa2, minify=False)
+            res = dfa1.difference(dfa2)
+            return NFA.from_dfa(res)
+        elif str(op) == "re.range":
+            w1 = str(param[i].children()[0])[1:-2]
+            w2 = str(param[i].children()[1])[1:-2]
+            return range_nfa(w1, w2)
+        elif str(op) == "re.^":
+            nfa1 = extractChildren(param[i].children())
+            ran = int(param[i].vParams[0])
+            tmp = nfa1.copy()
+            for i in range(ran):
+                tmp = tmp.concatenate(nfa1)
+            return tmp
+
+        elif str(op) == "re.loop":
+
+            nfa1 = extractChildren(param[i].children())
+
+            ran1 = int(param[i].vParams[0])
+            ran2 = int(param[i].vParams[1])
+
+            if ran2 < ran1:
+                none_nfa = NFA(states={'q0'}, input_symbols=set(), transitions={}, initial_state='q0',
+                               final_states=set())
+                return none_nfa
+            elif ran1 == ran2:
+                tmp = nfa1.copy()
+                for i in range(ran1):
+                    tmp = tmp.concatenate(nfa1)
+                return tmp
+            else:
+                nfas = []
+                tmp = nfa1.copy()
+                for i in range(ran1):
+                    tmp = tmp.concatenate(nfa1)
+                nfas.append(tmp.copy())
+                for j in range(ran1+1, ran2):
+                    tmp = tmp.concatenate(nfa1)
+                    nfas.append(tmp.copy())
+                tmp = nfas[0]
+                for k in range(1, len(nfas)):
+                    tmp = tmp.union(nfas[k])
+                return tmp
+        elif str(op) == "str.to_re":
+            m = str(param[i].children()[0])[1:-2]
+
+            states = set()
+            alphabet = set()
+            start = 'q0'
+            end = {'qf'}
+            states.add('qf')
+            transitions = dict()
+
+            for i in range(len(m)):
+                alphabet.add(m[i])
+                states.add("q" + str(i))
+                transitions['q' + str(i)] = {}
+                transitions['q' + str(i)][m[i]] = {}
+                transitions['q' + str(i)][m[i]] = {"q" + str(i + 1)}
+            states.add("q" + str(len(m)))
+            transitions['q' + str(len(m))] = {}
+            transitions['q' + str(len(m))][''] = {"qf"}
+            n = NFA(states=states, input_symbols=alphabet, initial_state='q0', final_states=end,
+                    transitions=transitions)
+            return n
+        else: return None
 
 
 
-def recursivelyFindRegexOrWEQ(param, WEQ, RGX, numLenCon):
+
+def recursivelyFindRegexOrWEQ(param, WEQ, RGX, numLenCon, RGXDepth):
     for i in range(len(param)):
         if param[i].kind() == Kind.WEQ:
             children = param[i].children()
@@ -157,15 +259,15 @@ def recursivelyFindRegexOrWEQ(param, WEQ, RGX, numLenCon):
             #return
         elif param[i].kind() == Kind.REGEX_CONSTRAINT:
             rgx = ""
-
-            rgx = exRE(param[i], rgx)
+            RGXDepth.append(getMaxRecDepth(param[i]))
+            rgx = extractChildren(param[i].children()[1:])
             RGX.append(rgx)
             #return
         elif param[i].kind() == Kind.LENGTH_CONSTRAINT:
 
             numLenCon[0] += 1
         elif param[i].kind() == Kind.OTHER or param[i].kind() == Kind.LENGTH_CONSTRAINT:
-            recursivelyFindRegexOrWEQ(param[i].children(), WEQ, RGX, numLenCon)
+            recursivelyFindRegexOrWEQ(param[i].children(), WEQ, RGX, numLenCon, RGXDepth)
     return
 
 
@@ -191,11 +293,11 @@ def extract(ast):
         else:
             for el in v[elem]:
                 allVars.append(el)
-    #print(stringVars)
-    #print(allVars)
+
 
     WEQ = []
     RGX = []
+    RGXDepth = []
     numLenCon = [0]
     numAsserts = len(ast)
     maxRecDepth = 0
@@ -244,13 +346,15 @@ def extract(ast):
             eq.displayText = lhs + " = " + rhs
             WEQ.append(eq)
         if node.kind() == Kind.REGEX_CONSTRAINT:
-            rgx = ""
-            rgx = exRE(node, rgx)
+
+            rgx = extractChildren(node.children()[1:])
+            RGXDepth.append(getMaxRecDepth(node))
             RGX.append(rgx)
         if node.kind() == Kind.LENGTH_CONSTRAINT:
             numLenCon[0] += 1
 
         if node.kind() == Kind.OTHER:
             param = node.children()
-            recursivelyFindRegexOrWEQ(param, WEQ, RGX, numLenCon)
-    return allVars, stringVars, WEQ, RGX, numLenCon[0], numAsserts, maxRecDepth
+            recursivelyFindRegexOrWEQ(param, WEQ, RGX, numLenCon, RGXDepth)
+    return allVars, stringVars, WEQ, RGX, numLenCon[0], numAsserts, maxRecDepth, RGXDepth
+

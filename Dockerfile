@@ -20,7 +20,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install dependencies:
 RUN python3 setup.py develop
-RUN pip3 install sqlalchemy pyyaml z3-solver graphviz celery matplotlib tabulate pathos pythomata automata_tools copy stopit sklearn dtreeviz==1.3.7
+RUN pip3 install sqlalchemy pyyaml z3-solver graphviz celery matplotlib tabulate pathos pythomata automata-lib copy stopit sklearn dtreeviz==1.3.7
 
 # Link benchmarks used in the paper
 # uncomment the following lines to use our benchmarks, database, and cached ASTS

@@ -108,7 +108,18 @@ class Features:
     def __call__(self, smtfile):
         _storage = smtquery.config.getConfiguration().getStorage()
         ast = Probes().getIntel(smtfile)
-        allVar, StringVar, WEQ, RGX, numLin, numasserts, recDepth = newParse.extract(ast)
+        allVar, StringVar, WEQ, RGX, numLin, numasserts, recDepth, RGXdepths = newParse.extract(ast)
+        alphabets = []
+        minDafStates = []
+        for nfa in RGX:
+            alphabets.append(len(nfa.input_symbols))
+            dfa = DFA.from_nfa(nfa).minify()
+            minDafStates.append(len(dfa.states))
+
+        maxDepth = max(RGXdepths)
+        maxSymb = max(alphabets)
+        maxNumState = max(minDafStates)
+
         numStringVar = len(StringVar)
         if len(allVar) == 0:
             varRatio = 0
@@ -118,7 +129,7 @@ class Features:
         numReg = len(RGX)
         numQWEQ, maxNumOfQVar, scopeIncidence, largesRatioVarCon, smallestRatioVarCon, largestRatioLR, smallestRatioLR = extractFeatWE.extractFeatures(
             WEQ, StringVar)
-        maxSymb, maxDepth, maxNumState = regexParser.extractFeat(RGX)
+
         if smallestRatioLR == 10000:
             smallestRatioLR = 0
         if smallestRatioVarCon == 10000:
