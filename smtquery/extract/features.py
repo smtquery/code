@@ -13,7 +13,7 @@ from smtquery.extract.featureExtractionFiles import newParse
 
 from smtquery.extract.featureExtractionFiles import extractFeatWE
 
-from smtquery.extract.featureExtractionFiles import regexParser
+
 import graphviz
 from sklearn import tree
 from dtreeviz.trees import dtreeviz
