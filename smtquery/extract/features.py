@@ -6,7 +6,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 import smtquery.ui
 from smtquery.solvers.solver import *
-
+from automata.fa.dfa import DFA
 from smtquery.intel.plugins.probes import Probes
 
 from smtquery.extract.featureExtractionFiles import newParse
@@ -116,9 +116,15 @@ class Features:
             dfa = DFA.from_nfa(nfa).minify()
             minDafStates.append(len(dfa.states))
 
-        maxDepth = max(RGXdepths)
-        maxSymb = max(alphabets)
-        maxNumState = max(minDafStates)
+        maxDepth = 0
+        if len(RGXdepths) > 0:
+            maxDepth = max(RGXdepths)
+        maxSymb = 0
+        if len(alphabets) > 0:
+            maxSymb = max(alphabets)
+        maxNumState = 0
+        if len(minDafStates) > 0: 
+            maxNumState = max(minDafStates)
 
         numStringVar = len(StringVar)
         if len(allVar) == 0:
