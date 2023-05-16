@@ -177,7 +177,8 @@ class DBFSStorage:
                             path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                             track_id = track_id
                         )).inserted_primary_key[0]
-
+            conn.commit ()
+        
     def allocate_new_files_db (self):
         with  smtquery.ui.output.makeProgressor () as progress:
         
@@ -233,7 +234,7 @@ class DBFSStorage:
                             path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                             track_id = track_id
                         )).inserted_primary_key[0]
-
+            conn.commit ()
         
     def getBenchmarks (self):
         conn = self._engine.connect ()
