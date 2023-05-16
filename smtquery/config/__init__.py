@@ -5,7 +5,6 @@ import smtquery.storage.smt
 import smtquery.intel
 import smtquery.scheduling
 import smtquery.scheduling.multi
-import smtquery.scheduling.celerys
 import pickle
 
 
@@ -62,8 +61,6 @@ def createSolvers (solverdata):
 def createFrontScheduler (data):
     if data["name"] == "multiprocessing":
         scheduler = smtquery.scheduling.multi.Queue (int(data["cores"]))        
-    if data["name"] == "celery":
-        scheduler = smtquery.scheduling.celerys.Queue ("HH")
     if data["name"] == "single":
         scheduler = smtquery.scheduling.single.Queue ()
     return scheduler
