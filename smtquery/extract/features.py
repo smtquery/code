@@ -83,7 +83,6 @@ class Features:
         return "Features"
 
     def finalise(self, results, total):
-        print (results)
         dataframe = pd.DataFrame(
             columns=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
                      "largesRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",

@@ -42,7 +42,6 @@ class Queue:
         si.getResultsForInstance(smtfile)
 
     def interpretSolverRes (self,res):
-        print (res)
         return res
     
     def runSelect (self,conf,pred,attriextractor,instance,pushres):

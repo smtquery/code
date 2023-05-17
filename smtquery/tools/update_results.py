@@ -45,7 +45,7 @@ def run (args):
             progress.message (f"Waiting for verification results ... ")
 
     # store results
-    for res in results.get():
+    for res in schedule.interpretSolverRes (results):
         for s,r in res.items():
             storeVerified (r)
 
