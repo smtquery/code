@@ -18,12 +18,11 @@ class SolverInteraction:
     def _fetchFallBack (self,smtfile):
         results = dict()
         for key,solver in self._solvers.items ():
-            solverres = self._schedule.runSolver (solver,[smtfile],[self._run_parameters["timeout"]])
-            results[key] = solverres
-        
+            results[key] = self._schedule.runSolver (solver,[smtfile],[self._run_parameters["timeout"]])
+             
         f_results = dict()
         for solver,res in results.items():
-            r = self._schedule.interpretSolverRes (res)[0]
+            r = res.get()[0]
             f_results[solver] =  {"r_id" : None, "result" : r.getResult(), "time" : r.getTime(), "model" : r.getModel(), "verified": None}
         return f_results
     
@@ -130,7 +129,7 @@ class SolverInteraction:
             if hasattr(r, 'wait'):
                 r.wait ()
        
-        verifier_results=[self._schedule.interpretSolverRes (r).getResult() == smtquery.solvers.solver.Result.Satisfied for r in ll if self._schedule.interpretSolverRes(r) != None]
+        verifier_results=[r.get().getResult() == smtquery.solvers.solver.Result.Satisfied for r in ll if r.get() != None]
 
         #t_res = self._schedule.interpretSolverRes (r)
         #verifier_results+=[True if t_res.getResult() == smtquery.solvers.solver.Result.Satisfied else False]

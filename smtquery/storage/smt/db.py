@@ -33,13 +33,16 @@ class SMTFile:
         name = os.path.split (self._filepath)[1]
         shutil.copyfile (self._filepath,os.path.join (directory,name))
         return os.path.join (directory,name)
-
+    
     def getName (self):
         return self._name
 
     def getId (self):
         return self._id
 
+    def getFilepath (self):
+        return self._filepath
+    
     def __str__ (self):
         return self.SMTString ()
     
