@@ -97,6 +97,7 @@ class Solver:
         return verresult
     
     def runSolverOnPath (self,smtpath,timeout = None)->VerificationResult:
+        print (smtpath)
         verresult = None
         timer = Timer ()
         try:

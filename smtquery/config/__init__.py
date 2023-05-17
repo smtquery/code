@@ -1,6 +1,8 @@
 from smtquery.config.FileLocator import * 
 import yaml
 import smtquery.solvers
+import smtquery.verifiers.verifier
+
 import smtquery.storage.smt
 import smtquery.intel
 import smtquery.scheduling
@@ -113,7 +115,7 @@ def _readConfigPath():
     scheduler = createFrontScheduler ({"name" : "single"}) # use single processing inside to avoid children of children 
     storage = createStorage (data["SMTStore"])
     runParameters = data["runParameters"]
-    verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
+    verifiers = {k : smtquery.verifiers.verifier.Verifier (solverarr[k]) for k in data["verifiers"] if k in data["solvers"]} #createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
     filepath = data["SMTStore"]["root"]
     cwd = data["SMTStore"]["cwd"]
     conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd)

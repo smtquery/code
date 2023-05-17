@@ -23,18 +23,18 @@ def run (args):
     files = list(storage.allFiles ())
 
     results = dict()
-    with smtquery.ui.output.makeProgressor () as progress:
-        for key,solver in solvers.items ():
-            results[key] = schedule.runSolver (solver,files,[run_parameters["timeout"]]*len(files))
-            progress.message (f"Submitting {key} jobs.")
+#    with smtquery.ui.output.makeProgressor () as progress:
+#        for key,solver in solvers.items ():
+#            results[key] = schedule.runSolver (solver,files,[run_parameters["timeout"]]*len(files))
+#            progress.message (f"Submitting {key} jobs.")
 
-        while not all([results[k].ready() for k in solvers.keys()]):
-            progress.message (f"Waiting for results ... ")
+#        while not all([results[k].ready() for k in solvers.keys()]):
+#            progress.message (f"Waiting for results ... ")
     
     # store results
-    for k in results.keys():
-        for file,res in zip(files,results[k].get()):
-            storeResult (solvers[k],file,res)
+#    for k in results.keys():
+#        for file,res in zip(files,results[k].get()):
+#            storeResult (solvers[k],file,res)
 
     ## verification
     results = dict()

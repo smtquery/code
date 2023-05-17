@@ -44,7 +44,6 @@ class SolverInteraction:
 
     def getResultsForInstance(self,smtfile):
         results = self._fetchResultsForInstance(smtfile)
-
         # check if all results are verified
         if any(True if x["verified"] == None else False for x in results.values()):
             results = self._verifyResults(smtfile,results)
@@ -115,21 +114,17 @@ class SolverInteraction:
 
     ## verification
     def _isValidModel(self,smtfile,model):
-        model = self._extractAssignment(model)
-        smt_file_path = f'{self._file_root}' + ''.join(f"/{f}" for f in smtfile.getName().split(":"))
-        ast = smtquery.smtcon.smt2expr.Z3SMTtoSExpr().getAST(smt_file_path)
-        smt_ver_text = f"{ast._getPPSMTHeader()}\n{model}\n{ast._getPPAsserts()}\n{ast._getPPSMTFooter()}"
+        #model = self._extractAssignment(model)
+        #smt_file_path = f'{self._file_root}' + ''.join(f"/{f}" for f in smtfile.getName().split(":"))
+        #ast = smtquery.smtcon.smt2expr.Z3SMTtoSExpr().getAST(smt_file_path)
+        #smt_ver_text = f"{ast._getPPSMTHeader()}\n{model}\n{ast._getPPAsserts()}\n{ast._getPPSMTFooter()}"
         ll = []
-        verifier_results = []
+        #verifier_results = []
         for key,verifier in self._verifiers.items():
-                t_res = self._schedule.runSolverOnText(verifier,smt_ver_text,self._run_parameters["timeout"])
-                ll.append (t_res)                
-        for r in ll:
-            # check if it is handled by a scheduler
-            if hasattr(r, 'wait'):
-                r.wait ()
+            t_res = self._schedule.runVerifier(verifier,smtfile,model,self._run_parameters["timeout"])
+            ll.append (t_res)                
        
-        verifier_results=[r.get().getResult() == smtquery.solvers.solver.Result.Satisfied for r in ll if r.get() != None]
+        verifier_results=[r.get() == smtquery.verifiers.verifier.Validated.Validated for r in ll if r.get() != None]
 
         #t_res = self._schedule.interpretSolverRes (r)
         #verifier_results+=[True if t_res.getResult() == smtquery.solvers.solver.Result.Satisfied else False]
@@ -147,7 +142,7 @@ class SolverInteraction:
             return s[len("sat("):-1]
         else:
             return s[len("("):-1]
-
+        
 
 
 def getResultsForInstance(smtfile):

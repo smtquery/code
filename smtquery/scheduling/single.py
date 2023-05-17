@@ -51,6 +51,10 @@ class Queue:
     def runSolverOnText (self,func,text,timeout):
         return Wrapper(func.runSolverOnText(text,timeout))
 
+    def runVerifier (self,func,smtfile,model,timeout):
+        return Wrapper(func.verifyModel (smtfile,model,timeout))
+    
+    
     def runVerification (self,si,smtfiles):
         results = []
         for smtfile in smtfiles:  
