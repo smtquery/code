@@ -1,10 +1,8 @@
 solvers:
   Z3Str3:
-    binary: /opt/venv/bin/z3
+    binary: /usr/bin/z3
   Z3Seq:
-    binary: /opt/venv/bin/z3
-  CVC5:
-    binary: /usr/bin/cvc5-Linux
+    binary: /usr/bin/z3
 
 verifiers: [Z3Seq]
 

@@ -147,8 +147,8 @@ class Interpreter:
                     res = schedule.runSelectNoPred(attriextractor,i,self._push)
                     ll.append (res) 
             progress.message (f"Waiting for results ...")
-            for r in ll:
-                r.wait ()
+            #for r in ll:
+            #    r.wait ()
 
             results = [r.get() for r in ll if r.get() != None]
             progress.message (f"{len(results)} out of {total_instances} instances:\n")

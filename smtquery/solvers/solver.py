@@ -116,7 +116,6 @@ class Solver:
             if verresult == None:
                 verresult =  self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
             if store != None:
-                print ("Store result")
                 store.storeResult (verresult,smtfile,self)
             return verresult
 
