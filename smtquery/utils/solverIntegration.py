@@ -15,42 +15,33 @@ class SolverInteraction:
     def getResultForSolver (self,smtfile,solvername):
         return self.getResultsForInstance(smtfile)[solvername]
 
+    def _fetchFallBack (self,smtfile):
+        results = dict()
+        for key,solver in self._solvers.items ():
+            solverres = self._schedule.runSolver (solver,[smtfile],[self._run_parameters["timeout"]])
+            results[key] = solverres
+        
+        f_results = dict()
+        for solver,res in results.items():
+            r = self._schedule.interpretSolverRes (res)[0]
+            f_results[solver] =  {"r_id" : None, "result" : r.getResult(), "time" : r.getTime(), "model" : r.getModel(), "verified": None}
+        return f_results
+    
+    
     def _fetchResultsForInstance(self,smtfile):
         # try using the database
         b_input = smtfile.getName().split(":")
         b_smtfile = self._storage.searchFile(b_input[0],b_input[1],b_input[2])
-        if b_smtfile != None:
-            b_id = b_smtfile.getId() 
-            res = self._storage._fetchResultsForBenchmarkIdFromDB(b_id)
-            # make sure results are available for all solvers
-            if set(res.keys()) == set(self._solvers.keys()):
-                return res
-            # fall back
-            results = dict()
-            for key,solver in self._solvers.items ():
-                results[key] = self._schedule.runSolver (solver,[smtfile],[self._run_parameters["timeout"]])
-
-            if len(list(results.keys())) > 0 and hasattr(results[list(results.keys())[0]], 'ready'):
-                while not all([results[k].ready() for k in results.keys()]):
-                    pass
-
-            f_results = dict()
-            for solver,res in results.items():
-                if hasattr(res,'get'):
-                    r = res.get()[0]
-                else:
-                    r = res[0]
-                f_results[solver] =  {"r_id" : None, "result" : r.getResult(), "time" : r.getTime(), "model" : r.getModel(), "verified": None}
-            return f_results
-
-            """
-            for r in ll:    
-                res = self._schedule.interpretSolverRes (r)
-                if res != None:
-                    self._storage.storeResult (res,smtfile,solver)
-            return self._storage._fetchResultsForBenchmarkIdFromDB(b_id)
-            """
-        return dict()
+        if b_smtfile == None:
+            return dict()
+        
+        b_id = b_smtfile.getId() 
+        res = self._storage._fetchResultsForBenchmarkIdFromDB(b_id)
+        # make sure results are available for all solvers
+        if set(res.keys()) == set(self._solvers.keys()):
+            return res
+        else:
+            return self._fetchFallBack (b_smtfile)
 
     def getResultsForInstance(self,smtfile):
         results = self._fetchResultsForInstance(smtfile)
@@ -105,7 +96,7 @@ class SolverInteraction:
                 if r["result"] == majority:
                     #self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Majority)
                     r["verified"] = smtquery.solvers.solver.Verified.Majority
-
+                    
                 else:
                     #self._storage.storeVerified (r,smtquery.solvers.solver.Verified.Unverified)
                     r["verified"] = smtquery.solvers.solver.Verified.Unverified
