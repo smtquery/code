@@ -11,13 +11,13 @@ def applySelect(conf,attriextractor,instance,pushres):
 def applySelectCheckPred(conf,pred,attriextractor,instance,pushres):
     if pred.Check (instance) == smtquery.qlang.predicates.Trool.TT:
         return applySelect(conf,attriextractor,instance,pushres)
-
+    
 def applyExtract(node,instance):
-    node.getExtractFunc () (node.getApply  () (instance))
+    return node.getExtractFunc () (node.getApply  () (instance))
 
 def applyExtractCheckPred(pred,node,instance):
     if pred.Check (instance) == smtquery.qlang.predicates.Trool.TT:
-        applyExtract(node,instance)
+        return applyExtract(node,instance)
 
 
 def callbackSelect (res):
@@ -42,8 +42,9 @@ class Queue:
         si.getResultsForInstance(smtfile)
 
     def interpretSolverRes (self,res):
+        print (res)
         return res
-
+    
     def runSelect (self,conf,pred,attriextractor,instance,pushres):
         return applySelectCheckPred(conf,pred,attriextractor,instance,pushres)#,callback = callbackSelect)
 
@@ -57,4 +58,7 @@ class Queue:
         return applyExtract(node,instance)
     
     def workerQueue (self):
-        pass 
+        pass
+
+    def close (self):
+        pass

@@ -93,8 +93,7 @@ class Queue:
         #resfunc = functools.partial (callback,func,smtfile)
         #return self._pool.apipe (func.runSolver,smtfile,timeout,callback = resfunc)
         return self._pool.amap (func.runSolver,smtfiles,timeouts)
-
-
+ 
     def runSolverOnText (self,func,text,timeout):
         resfunc = functools.partial (callback,func,text)
         return self._pool.apipe (func.runSolverOnText,(text,timeout))

@@ -172,16 +172,17 @@ class Interpreter:
                     total_checked_instances+=1
                     res = schedule.runExtract(pred,node,i)
                     ll.append (res)
+                    
             else:
                 for i in instances.enumerate ():
                     progress.message (f"Submitting {i.getName()}")
                     total_checked_instances+=1
                     res = schedule.runExtractNoPred(node,i)
-                    ll.append (res) 
+                    ll.append (res)
             progress.message (f"Waiting for results ...\n")
-            for r in ll:
-                r.wait ()
-            node.getExtractFunc ().finalise([r.get() for r in ll],total_checked_instances)
+            #for r in ll:
+            #    r.wait ()
+            node.getExtractFunc ().finalise([schedule.interpretSolverRes (r) for r in ll],total_checked_instances)
         
         ###
 

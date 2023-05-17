@@ -19,9 +19,6 @@ from sklearn import tree
 from dtreeviz.trees import dtreeviz
 
 
-
-
-
 class Features:
     output_folder = "./output/Features/"
 
@@ -42,7 +39,7 @@ class Features:
         report = report + "Number of not solvable instances: " + str(notSolved) + "\n"
         report = report + "Instances solved by Z3Str3: " + str(len(dataframe[dataframe['solver'] == 1])) + "\n"
         report = report + "Instances solved by Z3Seq: " + str(len(dataframe[dataframe['solver'] == 0])) + "\n"
-        report = report + "Instances solved by CVC5: " + str(len(dataframe[dataframe['solver'] == 2])) + "\n"
+        #report = report + "Instances solved by CVC5: " + str(len(dataframe[dataframe['solver'] == 2])) + "\n"
         return report
 
 
@@ -63,7 +60,9 @@ class Features:
                      "largesRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
                      "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
                      "maxRecDepth"],
-                      class_names=['Z3Seq', 'Z3Str3','CVC5'])
+                     #class_names=['Z3Seq', 'Z3Str3','CVC5'])
+                     class_names=['Z3Seq','Z3Str3']
+                       )
         return viz
 
 
@@ -84,7 +83,7 @@ class Features:
         return "Features"
 
     def finalise(self, results, total):
-
+        print (results)
         dataframe = pd.DataFrame(
             columns=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
                      "largesRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
@@ -93,7 +92,7 @@ class Features:
 
         path = self.output_folder + dataframe["path"][0].split(":")[0]
         os.makedirs(path, exist_ok=True)
-        _ = dataframe.to_csv(f"{path}/features.csv", index=False)
+        dataframe.to_csv(f"{path}/features.csv", index=False)
 
         df = dataframe
         viz = self.buildTree(df.dropna())
@@ -103,7 +102,6 @@ class Features:
         with open(f"{path}/report.txt", 'w') as f:
             f.write(report)
         f.close()
-
 
     def __call__(self, smtfile):
         _storage = smtquery.config.getConfiguration().getStorage()
@@ -149,11 +147,11 @@ class Features:
             b = res["Z3Str3"]["time"]
         else:
             b = 1000
-        if res["CVC5"]["result"] in [Result.NotSatisfied, Result.Satisfied]:
-            c = res["CVC5"]["time"]
-        else:
-            c = 1000
-        r = [a, b, c]
+        #if res["CVC5"]["result"] in [Result.NotSatisfied, Result.Satisfied]:
+        #    c = res["CVC5"]["time"]
+        #else:
+        #    c = 1000
+        r = [a, b]
         solver = r.index(min(r))
         if solver == 1000:
             solver = "NaN"
