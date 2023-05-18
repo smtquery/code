@@ -132,17 +132,7 @@ class SolverInteraction:
         # a least on verfier has to validate the model
         return any(verifier_results)
 
-    def _extractAssignment(self,model):
-        s = ""
-        for l in model:
-            s+=l.rstrip("\n")
-        if s.startswith("(model"):
-            return s[len("(model"):-1]
-        elif s.startswith("sat("):
-            return s[len("sat("):-1]
-        else:
-            return s[len("("):-1]
-        
+    
 
 
 def getResultsForInstance(smtfile):

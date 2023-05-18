@@ -10,7 +10,7 @@ class Validated(enum.Enum):
 class Verifier:
     def __init__(self,solver):
         self._solver = solver
-
+        
     def verifyModel (self,smtfile,model,timeout = None):
         ass_model = self._extractAssignment (model)
         ast = smtquery.smtcon.smt2expr.Z3SMTtoSExpr ().getAST (smtfile.getFilepath ())
@@ -23,7 +23,6 @@ class Verifier:
         if verresult.getResult () == smtquery.solvers.solver.Result.Satisfied:
             return Validated.Validated
         else:
-            
             return Validated.NotValidated
         
         

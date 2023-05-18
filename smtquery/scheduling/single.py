@@ -48,9 +48,6 @@ class Queue:
         #store = smtquery.config.getConfiguration().getStorage ()
         #store.storeResult (res,smtfile,func)
 
-    def runSolverOnText (self,func,text,timeout):
-        return Wrapper(func.runSolverOnText(text,timeout))
-
     def runVerifier (self,func,smtfile,model,timeout):
         return Wrapper(func.verifyModel (smtfile,model,timeout))
     
