@@ -8,6 +8,7 @@ import smtquery.intel
 import smtquery.scheduling
 import smtquery.scheduling.multi
 import pickle
+import os
 
 
 
@@ -20,6 +21,7 @@ class Configuration:
                  verifiers,
                  filepath,
                  cwd,
+                 outputlocation
                  ):
         self._solvers = solvers
         self._storage = storage
@@ -28,6 +30,7 @@ class Configuration:
         self._verifiers = verifiers
         self._filepath = filepath
         self._cwd = cwd
+        self._outputlocation = outputlocation
 
     def getSolvers (self):
         return self._solvers
@@ -50,6 +53,9 @@ class Configuration:
     def getCurrentWorkingDirectory(self):
         return self._cwd
 
+    def getOutputLocation (self):
+        return self._outputlocation
+    
     def cleanup(self):
         self._scheduler.close()
 
@@ -98,9 +104,10 @@ def readConfig (conffile,cwd):
     runParameters = data["runParameters"]
     verifiers = {k : solverarr[k] for k in data["verifiers"] if k in data["solvers"].keys() }
     filepath = data["SMTStore"]["root"]
-    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd)
+    outpath = os.path.abspath((data["outputlocation"]))
+    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd,outpath)
     storage.makeSolverInterAction()
-
+    
 # needed to potentially recreate the Configuration in a multiprocessing environment
 def _readConfigPath():
     if os.path.isfile("./data.pickle"):
@@ -117,7 +124,8 @@ def _readConfigPath():
     verifiers = {k : smtquery.verifiers.verifier.Verifier (solverarr[k]) for k in data["verifiers"] if k in data["solvers"]} #createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
     filepath = data["SMTStore"]["root"]
     cwd = data["SMTStore"]["cwd"]
-    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd)
+    outpath = os.path.abspath((data["outputlocation"]))
+    conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd,outpath)
     storage.makeSolverInterAction()
     return conf
 

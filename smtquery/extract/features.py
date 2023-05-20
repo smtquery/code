@@ -18,10 +18,13 @@ import graphviz
 from sklearn import tree
 from dtreeviz.trees import dtreeviz
 
+import smtquery.config
 
 class Features:
-    output_folder = "./output/Features/"
-
+    def __init__(self):
+        self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"Features")
+        self._solvers = list(smtquery.config.getConfiguration().getSolvers().keys ())
+        
     def create_report(self, dataframe, benchmarkName):
         report = "Report for Benchmark: " + benchmarkName + " with " + str(len(dataframe.index)) + " instances \n"
         report = report + "\n"
@@ -33,13 +36,18 @@ class Features:
             avgStr = dataframe.loc[dataframe['solver'] == 1, column].mean()
             avgSeq = dataframe.loc[dataframe['solver'] == 0, column].mean()
             avgCvc = dataframe.loc[dataframe['solver'] == 2, column].mean()
-            report = report + "Average: " + str(avgc) +" Average for Z3Str3: " + str(avgStr) + " Average for Z3Seq: " + str(avgSeq) + " Average for CVC5: " + str(avgCvc) + "\n"
-        notSolved = len(dataframe.index) - len(dataframe.dropna().index)
-        report = report + "\n"
-        report = report + "Number of not solvable instances: " + str(notSolved) + "\n"
-        report = report + "Instances solved by Z3Str3: " + str(len(dataframe[dataframe['solver'] == 1])) + "\n"
-        report = report + "Instances solved by Z3Seq: " + str(len(dataframe[dataframe['solver'] == 0])) + "\n"
-        #report = report + "Instances solved by CVC5: " + str(len(dataframe[dataframe['solver'] == 2])) + "\n"
+            report = report + f"Average: {avgc}"
+            for i,s in enumerate(self._solvers):
+                mean = avgStr = dataframe.loc[dataframe['solver'] == i, column].mean()
+                
+                report += f" Average for {s}: {mean}"
+            report += "\n"
+            notSolved = len(dataframe.index) - len(dataframe.dropna().index)
+            #report = report + "\n"
+            #report = report + "Number of not solvable instances: " + str(notSolved) + "\n"
+            #report = report + "Instances solved by Z3Str3: " + str(len(dataframe[dataframe['solver'] == 1])) + "\n"
+#            report = report + "Instances solved by Z3Seq: " + str(len(dataframe[dataframe['solver'] == 0])) + "\n"
+            #report = report + "Instances solved by CVC5: " + str(len(dataframe[dataframe['solver'] == 2])) + "\n"
         return report
 
 
@@ -61,7 +69,7 @@ class Features:
                      "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
                      "maxRecDepth"],
                      #class_names=['Z3Seq', 'Z3Str3','CVC5'])
-                     class_names=['Z3Seq','Z3Str3']
+                     class_names=self._solvers
                        )
         return viz
 
@@ -89,13 +97,13 @@ class Features:
                      "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
                      "maxRecDepth", "solver", "path"], data=results)
 
-        path = self.output_folder + dataframe["path"][0].split(":")[0]
+        path = os.path.join (self._output_folder,dataframe["path"][0].split(":")[0])
         os.makedirs(path, exist_ok=True)
-        dataframe.to_csv(f"{path}/features.csv", index=False)
+        dataframe.to_csv(os.path.join (path,"features.csv"), index=False)
 
         df = dataframe
         viz = self.buildTree(df.dropna())
-        viz.save(f"{path}/decisionTree.svg")
+        viz.save(os.path.join (path,"decisionTree.svg"))
 
         report = self.create_report(dataframe, dataframe["path"][0].split(":")[0])
         with open(f"{path}/report.txt", 'w') as f:
@@ -138,26 +146,18 @@ class Features:
         if smallestRatioVarCon == 10000:
             smallestRatioVarCon = 0
         res = _storage.getResultsForInstance(smtfile)
-        if res["Z3Seq"]["result"] in [Result.NotSatisfied, Result.Satisfied]:
-            a = res["Z3Seq"]["time"]
-        else:
-            a = 1000
-        if res["Z3Str3"]["result"] in [Result.NotSatisfied, Result.Satisfied]:
-            b = res["Z3Str3"]["time"]
-        else:
-            b = 1000
-        #if res["CVC5"]["result"] in [Result.NotSatisfied, Result.Satisfied]:
-        #    c = res["CVC5"]["time"]
-        #else:
-        #    c = 1000
-        r = [a, b]
-        solver = r.index(min(r))
-        if solver == 1000:
-            solver = "NaN"
+        solverindex = 0
+        solvertime = 1000
+        for i,s in enumerate(self._solvers):
+            if res[s]["result"] in [Result.NotSatisfied, Result.Satisfied]:
+                if res[s]["time"] < solvertime:
+                    solvertime = res[s]["time"]
+                    solverindex = i
+
         name = smtfile.getName()
         s_row = [numStringVar, varRatio, numWEQ, numQWEQ, maxNumOfQVar, scopeIncidence, largesRatioVarCon,
                  smallestRatioVarCon, largestRatioLR, smallestRatioLR, numReg, maxSymb, maxDepth, maxNumState, numLin,
-                 numasserts, recDepth, solver, name]
+                 numasserts, recDepth, solverindex, name]
         return s_row
 
 
