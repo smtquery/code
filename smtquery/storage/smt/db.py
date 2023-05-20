@@ -267,12 +267,14 @@ class DBFSStorage:
                 time = result.getTime(),
                 model = result.getModel (),
                 date = datetime.datetime.now ()
-            )
+            ).returning (self._result_table.c.id)
             # busy wait for multiprocessing 
             while True:
                 try:
-                    conn.execute (query)
+                    res = conn.execute (query)
+                    id = res.fetchone ()
                     conn.commit ()
+                    return id[0]
                     break
                 except Exception as e:
                     print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")

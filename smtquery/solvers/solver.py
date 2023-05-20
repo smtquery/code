@@ -35,11 +35,13 @@ class Verified(enum.Enum):
 class VerificationResult:
     def __init__ (self,result: Result,
                   time_in_seconds: float,
-                  model: str
+                  model: str,
+                  id  = None
                   ):
         self._result = result
         self._time_in_seconds = time_in_seconds
         self._model = model
+        self._id = None
 
     def getResult (self):
         return self._result
@@ -50,6 +52,9 @@ class VerificationResult:
     def getModel (self):
         return self._model
 
+    def getID (self):
+        return self._id
+    
     def __str__ (self):
         return f"{self._result.name} in {self._time_in_seconds} seconds" 
     
@@ -62,7 +67,7 @@ class Solver:
 
     def getName (self) -> str:
         return "Dummy"
-
+    
     def calcHash (self):
         with open(self._command,'br') as ff:
             return hashlib.sha256 (ff.read()).hexdigest ()
@@ -97,8 +102,8 @@ class Solver:
             return self.postprocess (os.path.split(smtpath)[0],stdout.decode(),timer.getElapsed ())
     
     def runSolver (self,smtfile,timeout = None,store = None)->VerificationResult:
-        smtpath = smtfile.copyOutSMTFile (tmpdir)
-        verresult = self.runSolverOnPath (smtpath,timeout)
+        verresult = self.runSolverOnPath (smtfile.getFilepath (),timeout)
         if store != None:
-            store.storeResult (verresult,smtfile,self)
+            verresult._id = store.storeResult (verresult,smtfile,self)
+            
         return verresult

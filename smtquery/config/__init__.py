@@ -54,8 +54,7 @@ class Configuration:
         self._scheduler.close()
 
 def createSolvers (solverdata):
-    solverarr = {}
-    
+    solverarr = {}    
     for solvername,sdata in solverdata.items ():
         solverarr[solvername] = smtquery.solvers.createSolver ( solvername,sdata["binary"])
     return solverarr
@@ -88,16 +87,16 @@ def readConfig (conffile,cwd):
     global conf
     data = yaml.load (conffile,Loader=yaml.Loader)
     data["SMTStore"]["cwd"] = cwd
-
+    
     # tmp store data
     with open("./data.pickle", 'wb') as handle:
         pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    solverarr = createSolvers (data["solvers"])
     scheduler = createFrontScheduler (data["scheduler"])
     storage = createStorage (data["SMTStore"])
+    solverarr = createSolvers (data["solvers"])
     runParameters = data["runParameters"]
-    verifiers = createSolvers ({k : data["solvers"][k] for k in data["verifiers"] if k in data["solvers"].keys() })
+    verifiers = {k : solverarr[k] for k in data["verifiers"] if k in data["solvers"].keys() }
     filepath = data["SMTStore"]["root"]
     conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd)
     storage.makeSolverInterAction()

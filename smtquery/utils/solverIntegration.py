@@ -23,7 +23,7 @@ class SolverInteraction:
         f_results = dict()
         for solver,res in results.items():
             r = res.get()[0]
-            f_results[solver] =  {"r_id" : None, "result" : r.getResult(), "time" : r.getTime(), "model" : r.getModel(), "verified": None}
+            f_results[solver] =  {"r_id" : r.getID (), "result" : r.getResult(), "time" : r.getTime(), "model" : r.getModel(), "verified": None}
         return f_results
     
     
@@ -114,10 +114,6 @@ class SolverInteraction:
 
     ## verification
     def _isValidModel(self,smtfile,model):
-        #model = self._extractAssignment(model)
-        #smt_file_path = f'{self._file_root}' + ''.join(f"/{f}" for f in smtfile.getName().split(":"))
-        #ast = smtquery.smtcon.smt2expr.Z3SMTtoSExpr().getAST(smt_file_path)
-        #smt_ver_text = f"{ast._getPPSMTHeader()}\n{model}\n{ast._getPPAsserts()}\n{ast._getPPSMTFooter()}"
         ll = []
         #verifier_results = []
         for key,verifier in self._verifiers.items():
@@ -125,10 +121,7 @@ class SolverInteraction:
             ll.append (t_res)                
        
         verifier_results=[r.get() == smtquery.verifiers.verifier.Validated.Validated for r in ll if r.get() != None]
-
-        #t_res = self._schedule.interpretSolverRes (r)
-        #verifier_results+=[True if t_res.getResult() == smtquery.solvers.solver.Result.Satisfied else False]
-
+        
         # a least on verfier has to validate the model
         return any(verifier_results)
 

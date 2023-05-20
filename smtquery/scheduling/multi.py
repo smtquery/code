@@ -28,8 +28,6 @@ class Queue:
         self._pool = ProcessPool(nodes=N)
 
     def runSolver (self,func,smtfiles,timeouts):
-        #resfunc = functools.partial (callback,func,smtfile)
-        #return self._pool.apipe (func.runSolver,smtfile,timeout,callback = resfunc)
         return self._pool.amap (func.runSolver,smtfiles,timeouts)
     
     
