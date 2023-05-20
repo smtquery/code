@@ -85,28 +85,20 @@ class Solver:
         with tempfile.TemporaryDirectory () as tmpdir:
             usepath = os.path.join (tmpdir,"input.smt")
             self.preprocessSMTFile (smtpath,usepath)
-            verresult = None
             timer = Timer ()
             try:
                 with timer:
                     stdout = subprocess.check_output ( self.buildCMDList (usepath),timeout = timeout)
             except subprocess.CalledProcessError as cer:
                 logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for {smtpath}")
-                verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
+                return VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
             except subprocess.TimeoutExpired:
-                verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
-            if verresult == None:
-                verresult =  self.postprocess (os.path.split(smtpath)[0],stdout.decode(),timer.getElapsed ())
-            return verresult
+                return VerificationResult (Result.TimeOut,timer.getElapsed(),"")
+            return self.postprocess (os.path.split(smtpath)[0],stdout.decode(),timer.getElapsed ())
     
     def runSolver (self,smtfile,timeout = None,store = None)->VerificationResult:
-        with tempfile.TemporaryDirectory () as tmpdir:
-            usepath = os.path.join (tmpdir,"input.smt")
-            smtpath = smtfile.copyOutSMTFile (tmpdir)
-            self.preprocessSMTFile (smtpath,usepath)
-
-            verresult = self.runSolverOnPath (smtpath,timeout)
-            
-            if store != None:
-                store.storeResult (verresult,smtfile,self)
-            return verresult
+        smtpath = smtfile.copyOutSMTFile (tmpdir)
+        verresult = self.runSolverOnPath (smtpath,timeout)
+        if store != None:
+            store.storeResult (verresult,smtfile,self)
+        return verresult
