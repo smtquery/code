@@ -74,42 +74,30 @@ class Solver:
         if "unsat" in stdout:
             return VerificationResult (Result.NotSatisfied,time,"")
         elif "sat" in stdout:
-            return VerificationResult (Result.Satisfied,time,"\n".join (stdout.splitlines()[1:])) 
+            return VerificationResult (Result.Satisfied,time,"\n".join (stdout.splitlines()[1:]))
         else:
             return VerificationResult (Result.Unknown,time,"")
         
     def buildCMDList (self,smtfilepath):
         return ["echo", smtfilepath]
     
-    def _runSolverBackend(self,usepath,timeout):
-        verresult = None
-        timer = Timer ()
-        try:
-            with timer:
-                stdout = subprocess.check_output ( self.buildCMDList (usepath),timeout = timeout)
-        except subprocess.CalledProcessError as cer:
-            logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for {smtpath}")
-            verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
-        except subprocess.TimeoutExpired:
-            verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
-        if verresult == None:
-            verresult =  self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
-        return verresult
-    
     def runSolverOnPath (self,smtpath,timeout = None)->VerificationResult:
-        verresult = None
-        timer = Timer ()
-        try:
-            with timer:
-                stdout = subprocess.check_output ( self.buildCMDList (smtpath),timeout = timeout)
-        except subprocess.CalledProcessError as cer:
-            logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for {smtpath}")
-            verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
-        except subprocess.TimeoutExpired:
-            verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
-        if verresult == None:
-            verresult =  self.postprocess (os.path.split(smtpath)[0],stdout.decode(),timer.getElapsed ())
-        return verresult
+        with tempfile.TemporaryDirectory () as tmpdir:
+            usepath = os.path.join (tmpdir,"input.smt")
+            self.preprocessSMTFile (smtpath,usepath)
+            verresult = None
+            timer = Timer ()
+            try:
+                with timer:
+                    stdout = subprocess.check_output ( self.buildCMDList (usepath),timeout = timeout)
+            except subprocess.CalledProcessError as cer:
+                logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for {smtpath}")
+                verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
+            except subprocess.TimeoutExpired:
+                verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
+            if verresult == None:
+                verresult =  self.postprocess (os.path.split(smtpath)[0],stdout.decode(),timer.getElapsed ())
+            return verresult
     
     def runSolver (self,smtfile,timeout = None,store = None)->VerificationResult:
         with tempfile.TemporaryDirectory () as tmpdir:
