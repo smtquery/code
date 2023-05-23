@@ -12,5 +12,3 @@ class FileLocator:
             if os.path.exists (path):
                 return path
         return None
-    
-    

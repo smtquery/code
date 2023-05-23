@@ -72,7 +72,7 @@ class Probes:
         return {
             "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
             "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
-            "#variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
+            "variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
             #"pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
         }
 

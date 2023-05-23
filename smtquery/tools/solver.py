@@ -30,6 +30,6 @@ def run (args):
     if file:
         res = schedule.runSolver (solver,[file],[run_parameters["timeout"]])
         res.wait ()
-        print (schedule.interpretSolverRes (res)[0])
+        print (res.get()[0])
     else:
         print (f"Cannot find file {args.benchmark} {args.track} {args.smtfile}")
