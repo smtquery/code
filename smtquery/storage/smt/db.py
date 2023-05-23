@@ -3,6 +3,7 @@ import shutil
 import sqlalchemy
 import datetime
 import time
+import logging
 import smtquery.solvers.solver
 import hashlib
 import smtquery.config
@@ -272,7 +273,8 @@ class DBFSStorage:
                     conn.commit ()
                     break
                 except Exception as e:
-                    print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
+                    #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
+                    logging.getLogger ().error (f"storeResult: {e} {os.getpid()} - I'm waiting... DB's locked!")
                     time.sleep(1)   
 
     def storeResultDict (self,result,smtfile,solvername):
@@ -293,7 +295,8 @@ class DBFSStorage:
                     conn.commit ()
                     break
                 except Exception as e:
-                    print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
+                    #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
+                    logging.getLogger ().error (f"storeResultDict: {e} {os.getpid()} - I'm waiting... DB's locked!")
                     time.sleep(1) 
 
     def storeVerified (self,result,verified):
@@ -311,7 +314,8 @@ class DBFSStorage:
                     conn.commit ()
                     break
                 except Exception as e:
-                    print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
+                    #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
+                    logging.getLogger ().error (f"storeVerified: {e} {os.getpid()} - I'm waiting... DB's locked!")
                     time.sleep(1)    
 
     def storagePredicates (self):
