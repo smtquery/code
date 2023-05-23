@@ -35,11 +35,13 @@ class Verified(enum.Enum):
 class VerificationResult:
     def __init__ (self,result: Result,
                   time_in_seconds: float,
-                  model: str
+                  model: str,
+                  id  = None
                   ):
         self._result = result
         self._time_in_seconds = time_in_seconds
         self._model = model
+        self._id = None
 
     def getResult (self):
         return self._result
@@ -50,6 +52,9 @@ class VerificationResult:
     def getModel (self):
         return self._model
 
+    def getID (self):
+        return self._id
+    
     def __str__ (self):
         return f"{self._result.name} in {self._time_in_seconds} seconds" 
     
@@ -62,7 +67,7 @@ class Solver:
 
     def getName (self) -> str:
         return "Dummy"
-
+    
     def calcHash (self):
         with open(self._command,'br') as ff:
             return hashlib.sha256 (ff.read()).hexdigest ()
@@ -74,67 +79,31 @@ class Solver:
         if "unsat" in stdout:
             return VerificationResult (Result.NotSatisfied,time,"")
         elif "sat" in stdout:
-            return VerificationResult (Result.Satisfied,time,"\n".join (stdout.splitlines()[1:])) 
+            return VerificationResult (Result.Satisfied,time,"\n".join (stdout.splitlines()[1:]))
         else:
             return VerificationResult (Result.Unknown,time,"")
         
     def buildCMDList (self,smtfilepath):
         return ["echo", smtfilepath]
     
-    def _runSolverBackend(self,usepath,timeout):
-        verresult = None
-        timer = Timer ()
-        try:
-            with timer:
-                stdout = subprocess.check_output ( self.buildCMDList (usepath),timeout = timeout)
-        except subprocess.CalledProcessError as cer:
-            logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for {smtpath}")
-            verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
-        except subprocess.TimeoutExpired:
-            verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
-        if verresult == None:
-            verresult =  self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
-        return verresult
-
-
-    def runSolver (self,smtfile,timeout = None,store = None)->VerificationResult:
-        verresult = None
+    def runSolverOnPath (self,smtpath,timeout = None)->VerificationResult:
         with tempfile.TemporaryDirectory () as tmpdir:
             usepath = os.path.join (tmpdir,"input.smt")
-            smtpath = smtfile.copyOutSMTFile (tmpdir)
             self.preprocessSMTFile (smtpath,usepath)
-            
             timer = Timer ()
             try:
                 with timer:
                     stdout = subprocess.check_output ( self.buildCMDList (usepath),timeout = timeout)
             except subprocess.CalledProcessError as cer:
                 logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for {smtpath}")
-                verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
+                return VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
             except subprocess.TimeoutExpired:
-                verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
-            if verresult == None:
-                verresult =  self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
-            if store != None:
-                store.storeResult (verresult,smtfile,self)
-            return verresult
-
-    def runSolverOnText(self,text,timeout = None):
-        verresult = None
-        with tempfile.TemporaryDirectory () as tmpdir:
-            usepath = os.path.join (tmpdir,"input.smt")
-            with open(usepath, 'w') as f:
-                f.write(text)
+                return VerificationResult (Result.TimeOut,timer.getElapsed(),"")
+            return self.postprocess (os.path.split(smtpath)[0],stdout.decode(),timer.getElapsed ())
+    
+    def runSolver (self,smtfile,timeout = None,store = None)->VerificationResult:
+        verresult = self.runSolverOnPath (smtfile.getFilepath (),timeout)
+        if store != None:
+            verresult._id = store.storeResult (verresult,smtfile,self)
             
-            timer = Timer ()
-            try:
-                with timer:
-                    stdout = subprocess.check_output ( self.buildCMDList (usepath),timeout = timeout)
-            except subprocess.CalledProcessError as cer:
-                logging.getLogger ().error (f"Solver {self.getName() } returned non-zero exit code for input-textfile (verification)!")
-                verresult = VerificationResult (Result.ErrorTermination,timer.getElapsed(),"")
-            except subprocess.TimeoutExpired:
-                verresult = VerificationResult (Result.TimeOut,timer.getElapsed(),"")
-            if verresult == None:
-                verresult =  self.postprocess (tmpdir,stdout.decode(),timer.getElapsed ())
-            return verresult
+        return verresult

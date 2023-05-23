@@ -19,3 +19,5 @@ SMTStore:
 scheduler:
   name: multiprocessing
   cores: 4
+
+outputlocation: output
