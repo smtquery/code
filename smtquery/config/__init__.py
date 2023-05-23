@@ -102,7 +102,7 @@ def readConfig (conffile,cwd):
     storage = createStorage (data["SMTStore"])
     solverarr = createSolvers (data["solvers"])
     runParameters = data["runParameters"]
-    verifiers = {k : solverarr[k] for k in data["verifiers"] if k in data["solvers"].keys() }
+    verifiers = {k : smtquery.verifiers.verifier.Verifier (solverarr[k]) for k in data["verifiers"] if k in data["solvers"].keys() }
     filepath = data["SMTStore"]["root"]
     outpath = os.path.abspath((data["outputlocation"]))
     conf = Configuration (solverarr,storage,scheduler,runParameters,verifiers,filepath,cwd,outpath)

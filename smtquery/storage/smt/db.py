@@ -11,6 +11,20 @@ import smtquery.ui
 import smtquery.intel
 from smtquery.utils.solverIntegration import SolverInteraction
 
+def busyWaitWrapper(conn,query):
+    while True:
+        try:
+            res = conn.execute (query)
+            conn.commit ()
+            return res
+            break
+        except Exception as e:
+            logging.getLogger ().debug (f"{e} {os.getpid()} - I'm waiting... DB's locked!")
+
+
+
+
+
 class SMTFile:
     def __init__(self,name,filepath,id):
         assert (os.path.exists(filepath))
@@ -57,7 +71,8 @@ class Track:
 
     def filesInTrack (self):
         with self._engine.connect () as conn:
-            res = conn.execute (self._instance_table.select().where (self._instance_table.c.track_id == self._id))
+            res = busyWaitWrapper(conn,self._instance_table.select().where (self._instance_table.c.track_id == self._id))
+            #res = conn.execute (self._instance_table.select().where (self._instance_table.c.track_id == self._id))
             for row in res.fetchall ():
                 yield self._makesmt (row.name,row.path,row.id)
                 
@@ -76,7 +91,8 @@ class Benchmark:
         
     def tracksInBenchmark (self):
         with self._engine.connect () as conn:
-            res = conn.execute (self._tracks_table.select().where (self._tracks_table.c.bench_id == self._id))
+            res = busyWaitWrapper(conn,self._tracks_table.select().where (self._tracks_table.c.bench_id == self._id))
+            #res = conn.execute (self._tracks_table.select().where (self._tracks_table.c.bench_id == self._id))
             for row in res.fetchall ():
                 yield Track (row.name,self._engine,row.id,self._instancetable,self._makesmt)
             
@@ -158,7 +174,9 @@ class DBFSStorage:
                     benchpath = os.path.join (self._root,bench)
                     if not os.path.isdir (benchpath):
                         continue
-                    bench_id = conn.execute (self._benchmark_table.insert ().values (name = bench)).inserted_primary_key[0]
+
+                    bench_id = busyWaitWrapper(conn,self._benchmark_table.insert ().values (name = bench)).inserted_primary_key[0]
+                    #bench_id = conn.execute (self._benchmark_table.insert ().values (name = bench)).inserted_primary_key[0]
 
                     for track in os.listdir (benchpath):
                         trackpath = os.path.join (benchpath,track)
@@ -176,11 +194,19 @@ class DBFSStorage:
                                         "track_id": track_id}
                             progress.message (f"Initialising Database: {bench}:{track}:{instance}  ")
 
-                            id = conn.execute (self._instance_table.insert ().values (
+                            #id = conn.execute (self._instance_table.insert ().values (
+                            #    name = f"{bench}:{track}:{instance}",
+                            #    path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
+                            #    track_id = track_id
+                            #)).inserted_primary_key[0]
+
+                            id = busyWaitWrapper(conn,self._instance_table.insert ().values (
                                 name = f"{bench}:{track}:{instance}",
                                 path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                                 track_id = track_id
                             )).inserted_primary_key[0]
+
+
                 conn.commit ()
         
     def allocate_new_files_db (self):
@@ -197,7 +223,9 @@ class DBFSStorage:
                         continue
 
                     # benchmark already added?
-                    res = conn.execute (self._benchmark_table.select ().where ( self._benchmark_table.c.name == f"{bench}")).fetchall()
+                    #res = conn.execute (self._benchmark_table.select ().where ( self._benchmark_table.c.name == f"{bench}")).fetchall()
+                    res = busyWaitWrapper(conn,self._benchmark_table.select ().where ( self._benchmark_table.c.name == f"{bench}")).fetchall()
+
                     if len(res) > 0:
                         bench_id = res[0][0]
                     else:
@@ -209,11 +237,15 @@ class DBFSStorage:
                             continue
 
                         # track already added?
-                        res = conn.execute (self._tracks_table.select ().where ( self._tracks_table.c.name == f"{bench}:{track}")).fetchall()
+                        #res = conn.execute (self._tracks_table.select ().where ( self._tracks_table.c.name == f"{bench}:{track}")).fetchall()
+                        res = busyWaitWrapper(conn,self._tracks_table.select ().where ( self._tracks_table.c.name == f"{bench}:{track}")).fetchall()
+
                         if len(res) > 0:
                             track_id = res[0][0]
                         else:
-                            track_id = conn.execute (self._tracks_table.insert ().values (name = f"{bench}:{track}",
+                            #track_id = conn.execute (self._tracks_table.insert ().values (name = f"{bench}:{track}",
+                            #                                                    bench_id = bench_id)).inserted_primary_key[0]
+                            track_id =  busyWaitWrapper(conn,self._tracks_table.insert ().values (name = f"{bench}:{track}",
                                                                                 bench_id = bench_id)).inserted_primary_key[0]
 
                         for instance in os.listdir (trackpath):
@@ -221,7 +253,8 @@ class DBFSStorage:
                                 continue
 
                             # track already added?
-                            res = conn.execute (self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{instance}")).fetchall()
+                            #res = conn.execute (self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{instance}")).fetchall()
+                            res = busyWaitWrapper(conn,self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{instance}")).fetchall()
                             if len(res) > 0:
                                 continue
 
@@ -233,29 +266,39 @@ class DBFSStorage:
                                         "track_id": track_id}
                             progress.message (f"Adding to Database: {bench}:{track}:{instance}  ")
 
-                            id = conn.execute (self._instance_table.insert ().values (
+                            #id = conn.execute (self._instance_table.insert ().values (
+                            #    name = f"{bench}:{track}:{instance}",
+                            #    path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
+                            #    track_id = track_id
+                            #)).inserted_primary_key[0]
+                            id = busyWaitWrapper(conn,self._instance_table.insert ().values (
                                 name = f"{bench}:{track}:{instance}",
                                 path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                                 track_id = track_id
                             )).inserted_primary_key[0]
+
                 conn.commit ()
 
     def getBenchmarks (self):
         conn = self._engine.connect ()
-        res = conn.execute (self._benchmark_table.select ())
+        #res = conn.execute (self._benchmark_table.select ())
+        res = busyWaitWrapper(conn,self._benchmark_table.select ())
+
         for row in res.fetchall ():
             yield Benchmark (row.name,self._engine,row.id,self._tracks_table,self._instance_table,self._makesmt)
     
     def searchFile (self,bench,track,file):
         with self._engine.connect () as conn:
-            res = conn.execute (self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{file}"))
+            #res = conn.execute (self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{file}"))
+            res = busyWaitWrapper(conn,self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{file}"))
             for row in res.fetchall ():
                 return self._makesmt (row.name,row.path,row.id)
             return None
 
     def allFiles (self):
         with self._engine.connect () as conn:
-            res = conn.execute (self._instance_table.select ())
+            #res = conn.execute (self._instance_table.select ())
+            res = busyWaitWrapper(conn,self._instance_table.select ())
             for row in res.fetchall ():
                 yield self._makesmt (row.name,row.path,row.id)        
     
@@ -272,14 +315,14 @@ class DBFSStorage:
             # busy wait for multiprocessing 
             while True:
                 try:
-                    res = conn.execute (query)
+                    #res = conn.execute (query)
+                    res = busyWaitWrapper(conn,query)
                     id = res.fetchone ()
                     conn.commit ()
                     return id[0]
                     break
                 except Exception as e:
-                    #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
-                    logging.getLogger ().error (f"storeResult: {e} {os.getpid()} - I'm waiting... DB's locked!")
+                    logging.getLogger ().debug (f"storeResult: {e} {os.getpid()} - I'm waiting... DB's locked!")
                     time.sleep(1)   
 
     def storeResultDict (self,result,smtfile,solvername):
@@ -301,7 +344,7 @@ class DBFSStorage:
                     break
                 except Exception as e:
                     #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
-                    logging.getLogger ().error (f"storeResultDict: {e} {os.getpid()} - I'm waiting... DB's locked!")
+                    logging.getLogger ().debug (f"storeResultDict: {e} {os.getpid()} - I'm waiting... DB's locked!")
                     time.sleep(1) 
 
     def storeVerified (self,result,verified):
@@ -320,7 +363,7 @@ class DBFSStorage:
                     break
                 except Exception as e:
                     #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
-                    logging.getLogger ().error (f"storeVerified: {e} {os.getpid()} - I'm waiting... DB's locked!")
+                    logging.getLogger ().debug (f"storeVerified: {e} {os.getpid()} - I'm waiting... DB's locked!")
                     time.sleep(1)    
 
     def storagePredicates (self):
@@ -336,7 +379,8 @@ class DBFSStorage:
     # queries
     def _fetchResultsForBenchmarkIdFromDB(self,id,only_latest_results=True):
         with self._engine.connect () as conn:
-            res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id).order_by(self._result_table.c.date.desc()))
+            #res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id).order_by(self._result_table.c.date.desc()))
+            res = busyWaitWrapper(conn,self._result_table.select ().where ( self._result_table.c.instance_id == id).order_by(self._result_table.c.date.desc()))
             results = dict()
             seen = set()
             for row in res.fetchall ():
@@ -348,7 +392,8 @@ class DBFSStorage:
 
                 # fetch verified
                 verified = None
-                v_res = conn.execute (self._validated_table.select ().where ( self._validated_table.c.verification_result_id == row.id).order_by(self._validated_table.c.date.desc()))
+                #v_res = conn.execute (self._validated_table.select ().where ( self._validated_table.c.verification_result_id == row.id).order_by(self._validated_table.c.date.desc()))
+                v_res = busyWaitWrapper(conn,self._validated_table.select ().where ( self._validated_table.c.verification_result_id == row.id).order_by(self._validated_table.c.date.desc()))
                 v_results = v_res.fetchall()
                 if len(v_results) > 0:
                     verified = v_results[0].result
@@ -357,7 +402,8 @@ class DBFSStorage:
 
     def _getResultIdForSolverBenchmark(self,id,solvername,only_latest_results=True):
         with self._engine.connect () as conn:
-            res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id and self._result_table.c.solver == solvername).order_by(self._result_table.c.date.desc()))
+            #res = conn.execute (self._result_table.select ().where ( self._result_table.c.instance_id == id and self._result_table.c.solver == solvername).order_by(self._result_table.c.date.desc()))
+            res = busyWaitWrapper(conn,self._result_table.select ().where ( self._result_table.c.instance_id == id and self._result_table.c.solver == solvername).order_by(self._result_table.c.date.desc()))
             for row in res.fetchall():
                 return row[0]
             return None
@@ -378,6 +424,7 @@ class DBFSStorage:
 
     def getResultForSolver(self,smtfile,solvername):
         return self.getResultsForInstance(smtfile)[solvername] #self._solverInteraction.getResultForSolver(smtfile,solvername)
+
 
 
 
