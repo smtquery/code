@@ -29,8 +29,12 @@ class ParserError(Exception):
     def __str__(self):
         return f"Error while parsing {self.file_path}: {self.msg}"
 
-
-import z3
+import sys
+if sys.version_info[1] < 11:
+    from z3 import z3 as z3
+else:
+    import z3
+    
 class Z3SMTtoSExpr(SMTtoSExpr):
 
     def getSort(self,sort):
