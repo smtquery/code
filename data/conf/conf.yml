@@ -14,7 +14,7 @@ runParameters:
 SMTStore:
   name: DBFS
   root: data/smtfiles
-  engine_string: sqlite:///db.sql
+  engine_string: mariadb+mariadbconnector://me:123@127.0.0.1:3306/SMTQuery
   intels:
     - Probes
 

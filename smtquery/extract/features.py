@@ -22,8 +22,7 @@ import smtquery.config
 
 class Features:
     def __init__(self):
-        self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"Features")
-        self._solvers = list(smtquery.config.getConfiguration().getSolvers().keys ())
+        pass
         
     def create_report(self, dataframe, benchmarkName):
         report = "Report for Benchmark: " + benchmarkName + " with " + str(len(dataframe.index)) + " instances \n"
@@ -91,6 +90,9 @@ class Features:
         return "Features"
 
     def finalise(self, results, total):
+        self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"Features")
+        self._solvers = list(smtquery.config.getConfiguration().getSolvers().keys ())
+        
         dataframe = pd.DataFrame(
             columns=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
                      "largesRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
