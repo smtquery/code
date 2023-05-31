@@ -11,11 +11,12 @@ import smtquery.ui
 import smtquery.intel
 from smtquery.utils.solverIntegration import SolverInteraction
 
-def busyWaitWrapper(conn,query):
+def busyWaitWrapper(conn,query,commit = True):
     while True:
         try:
             res = conn.execute (query)
-            conn.commit ()
+            if commit:
+                conn.commit ()
             return res
             break
         except Exception as e:
@@ -71,7 +72,7 @@ class Track:
 
     def filesInTrack (self):
         with self._engine.connect () as conn:
-            res = busyWaitWrapper(conn,self._instance_table.select().where (self._instance_table.c.track_id == self._id))
+            res = busyWaitWrapper(conn,self._instance_table.select().where (self._instance_table.c.track_id == self._id), False)
             #res = conn.execute (self._instance_table.select().where (self._instance_table.c.track_id == self._id))
             for row in res.fetchall ():
                 yield self._makesmt (row.name,row.path,row.id)
@@ -206,9 +207,7 @@ class DBFSStorage:
                                 track_id = track_id
                             )).inserted_primary_key[0]
 
-
-                conn.commit ()
-                
+    
     def allocate_new_files_db (self):
         with  smtquery.ui.output.makeProgressor () as progress:
         
@@ -276,9 +275,8 @@ class DBFSStorage:
                                 path = instancepath[len(smtquery.config.getConfiguration().getCurrentWorkingDirectory())+1:],
                                 track_id = track_id
                             )).inserted_primary_key[0]
-
-                conn.commit ()
-
+                            
+                
     def getBenchmarks (self):
         conn = self._engine.connect ()
         #res = conn.execute (self._benchmark_table.select ())
@@ -313,17 +311,10 @@ class DBFSStorage:
                 date = datetime.datetime.now ()
             ).returning (self._result_table.c.id)
             # busy wait for multiprocessing 
-            while True:
-                try:
-                    #res = conn.execute (query)
-                    res = busyWaitWrapper(conn,query)
-                    id = res.fetchone ()
-                    conn.commit ()
-                    return id[0]
-                    break
-                except Exception as e:
-                    logging.getLogger ().debug (f"storeResult: {e} {os.getpid()} - I'm waiting... DB's locked!")
-                    time.sleep(1)   
+            
+            res = busyWaitWrapper(conn,query)
+            id = res.fetchone ()
+            return id[0]
 
     def storeResultDict (self,result,smtfile,solvername):
         with self._engine.connect () as conn:
@@ -336,17 +327,9 @@ class DBFSStorage:
                 date = datetime.datetime.now ()
             )
 
-            # busy wait for multiprocessing 
-            while True:
-                try:
-                    conn.execute (query)
-                    conn.commit ()
-                    break
-                except Exception as e:
-                    #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
-                    logging.getLogger ().debug (f"storeResultDict: {e} {os.getpid()} - I'm waiting... DB's locked!")
-                    time.sleep(1) 
-
+            # busy wait for multiprocessing
+            bysWaitWrapper (conn,query)
+            
     def storeVerified (self,result,verified):
         with self._engine.connect () as conn:
             query = self._validated_table.insert().values (
@@ -356,17 +339,8 @@ class DBFSStorage:
         )
             
             # busy wait for multiprocessing 
-            while True:
-                try:
-                    conn.execute (query)
-                    conn.commit ()
-                    break
-                except Exception as e:
-                    #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
-                    logging.getLogger ().debug (f"storeVerified: {e} {os.getpid()} - I'm waiting... DB's locked!")
-                    time.sleep(1)    
-                    conn.rollback ()
-                    
+            busyWaitWrapper (conn,query)
+                                
     def storagePredicates (self):
         return smtquery.intel.intels.predicates ()
 
