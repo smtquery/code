@@ -20,8 +20,8 @@ def busyWaitWrapper(conn,query):
             break
         except Exception as e:
             logging.getLogger ().debug (f"{e} {os.getpid()} - I'm waiting... DB's locked!")
-
-
+            conn.rollback ()
+            
 
 
 
@@ -208,7 +208,7 @@ class DBFSStorage:
 
 
                 conn.commit ()
-        
+                
     def allocate_new_files_db (self):
         with  smtquery.ui.output.makeProgressor () as progress:
         
@@ -365,7 +365,8 @@ class DBFSStorage:
                     #print(f"{e} {os.getpid()} - I'm waiting... DB's locked!")
                     logging.getLogger ().debug (f"storeVerified: {e} {os.getpid()} - I'm waiting... DB's locked!")
                     time.sleep(1)    
-
+                    conn.rollback ()
+                    
     def storagePredicates (self):
         return smtquery.intel.intels.predicates ()
 
