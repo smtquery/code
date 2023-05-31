@@ -21,8 +21,9 @@ def busyWaitWrapper(conn,query,commit = True):
             break
         except Exception as e:
             logging.getLogger ().debug (f"{e} {os.getpid()} - I'm waiting... DB's locked!")
-            conn.rollback ()
             
+            conn.rollback ()
+            raise e
 
 
 
@@ -288,7 +289,7 @@ class DBFSStorage:
     def searchFile (self,bench,track,file):
         with self._engine.connect () as conn:
             #res = conn.execute (self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{file}"))
-            res = busyWaitWrapper(conn,self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{file}"))
+            res = busyWaitWrapper(conn,self._instance_table.select ().where ( self._instance_table.c.name == f"{bench}:{track}:{file}"),False)
             for row in res.fetchall ():
                 return self._makesmt (row.name,row.path,row.id)
             return None
@@ -296,7 +297,7 @@ class DBFSStorage:
     def allFiles (self):
         with self._engine.connect () as conn:
             #res = conn.execute (self._instance_table.select ())
-            res = busyWaitWrapper(conn,self._instance_table.select ())
+            res = busyWaitWrapper(conn,self._instance_table.select (),False)
             for row in res.fetchall ():
                 yield self._makesmt (row.name,row.path,row.id)        
     
@@ -312,8 +313,9 @@ class DBFSStorage:
             ).returning (self._result_table.c.id)
             # busy wait for multiprocessing 
             
-            res = busyWaitWrapper(conn,query)
+            res = busyWaitWrapper(conn,query,False)
             id = res.fetchone ()
+            conn.commit ()
             return id[0]
 
     def storeResultDict (self,result,smtfile,solvername):
