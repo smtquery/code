@@ -22,7 +22,8 @@ import smtquery.config
 
 class Features:
     def __init__(self):
-        pass
+        self._solvers = None
+        self._output_folder = None
         
     def create_report(self, dataframe, benchmarkName):
         report = "Report for Benchmark: " + benchmarkName + " with " + str(len(dataframe.index)) + " instances \n"
@@ -36,7 +37,7 @@ class Features:
             avgSeq = dataframe.loc[dataframe['solver'] == 0, column].mean()
             avgCvc = dataframe.loc[dataframe['solver'] == 2, column].mean()
             report = report + f"Average: {avgc}"
-            for i,s in enumerate(self._solvers):
+            for i,s in enumerate(self.getSolvers ()):
                 mean = avgStr = dataframe.loc[dataframe['solver'] == i, column].mean()
                 
                 report += f" Average for {s}: {mean}"
@@ -68,7 +69,7 @@ class Features:
                      "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
                      "maxRecDepth"],
                      #class_names=['Z3Seq', 'Z3Str3','CVC5'])
-                     class_names=self._solvers
+                     class_names=self.getSolvers ()
                        )
         return viz
 
@@ -89,17 +90,24 @@ class Features:
     def getName():
         return "Features"
 
-    def finalise(self, results, total):
-        self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"Features")
-        self._solvers = list(smtquery.config.getConfiguration().getSolvers().keys ())
-        
+    def getSolvers (self):
+        if self._solvers == None:
+            self._solvers = list(smtquery.config.getConfiguration().getSolvers().keys ())
+        return self._solvers
+
+    def getOutputFolder (self):
+        if self._output_folder == None:
+            self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"Features")
+        return self._output_folder
+    
+    def finalise(self, results, total):        
         dataframe = pd.DataFrame(
             columns=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
                      "largesRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
                      "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
                      "maxRecDepth", "solver", "path"], data=results)
 
-        path = os.path.join (self._output_folder,dataframe["path"][0].split(":")[0])
+        path = os.path.join (self.getOutputFolder (),dataframe["path"][0].split(":")[0])
         os.makedirs(path, exist_ok=True)
         dataframe.to_csv(os.path.join (path,"features.csv"), index=False)
 
@@ -150,7 +158,7 @@ class Features:
         res = _storage.getResultsForInstance(smtfile)
         solverindex = 0
         solvertime = 1000
-        for i,s in enumerate(self._solvers):
+        for i,s in enumerate(self.getSolvers ()):
             if res[s]["result"] in [Result.NotSatisfied, Result.Satisfied]:
                 if res[s]["time"] < solvertime:
                     solvertime = res[s]["time"]
