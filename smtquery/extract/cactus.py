@@ -68,7 +68,7 @@ class CactusPlot:
             data = [i["y"] for i in cactus_data[s] if i["x"] >= start_at]
             ax.plot (range(start_at,len(data)+start_at),data,'-',linewidth=2.5,label=s,color=sColour)
             ax.fill_between(range(start_at,len(data)+start_at),data, color=sColour,alpha=0.15)
-            lgd = ax.legend(fancybox=True,bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=2, mode="expand", borderaxespad=0.,frameon=False,prop={'size': 6})
+            lgd = ax.legend(fancybox=True,bbox_to_anchor=(0., 1.02, 1., .102), loc='lower left', ncol=2, mode="expand", borderaxespad=0.,frameon=False)
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             ax.spines['bottom'].set_visible(False)
@@ -79,7 +79,7 @@ class CactusPlot:
             buf = BytesIO()
 
         os.makedirs(file_path,exist_ok = True)
-        fig.savefig(f"{file_path}/cactus.pdf",format="pdf",dpi=320,prop=fontP,bbox_extra_artists=(lgd,), bbox_inches='tight')
+        fig.savefig(f"{file_path}/cactus.pdf",format="pdf",dpi=320,bbox_extra_artists=(lgd,), bbox_inches='tight')
 
     ## aux
     def _colourGen(self):

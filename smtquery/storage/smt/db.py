@@ -1,6 +1,7 @@
 import os
 import shutil
 import sqlalchemy
+from sqlalchemy.dialects.mysql import LONGTEXT
 import datetime
 import time
 import logging
@@ -147,7 +148,7 @@ class DBFSStorage:
                                  sqlalchemy.Column ('result',sqlalchemy.Enum(smtquery.solvers.solver.Result),nullable=False),
                                  sqlalchemy.Column ('solver', sqlalchemy.String (255),nullable=False),
                                  sqlalchemy.Column ('time', sqlalchemy.Float,nullable=False),
-                                 sqlalchemy.Column ('model', sqlalchemy.Text),
+                                 sqlalchemy.Column ('model', LONGTEXT),
                                  sqlalchemy.Column ('date', sqlalchemy.DateTime),
                                  )
 
@@ -330,7 +331,7 @@ class DBFSStorage:
             )
 
             # busy wait for multiprocessing
-            bysWaitWrapper (conn,query)
+            busyWaitWrapper (conn,query)
             
     def storeVerified (self,result,verified):
         with self._engine.connect () as conn:

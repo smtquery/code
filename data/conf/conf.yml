@@ -1,8 +1,11 @@
 solvers:
   Z3Str3:
-    binary: /usr/bin/z3 
+    binary: /home/mku/tools/z3/bin/z3 
   Z3Seq:
-    binary: /usr/bin/z3
+    binary: /home/mku/tools/z3/bin/z3 
+  CVC5:
+    binary: /home/mku/share/tools/cvc5/cvc5
+
 
 verifiers: [Z3Seq]
 
@@ -12,7 +15,7 @@ runParameters:
 SMTStore:
   name: DBFS
   root: data/smtfiles
-  engine_string: sqlite:///db.sql
+  engine_string: mariadb+mariadbconnector://smtquerydb:password@127.0.0.1:3306/smtquery
   intels:
     - Probes
 
