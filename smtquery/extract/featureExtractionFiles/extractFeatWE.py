@@ -33,9 +33,9 @@ def getNumQWEQ(equations):
         for i in range(len(eq.isVarRHS)):
             if eq.isVarRHS[i] == 1:
                 if i == 0:
-                    var = eq.LHS[0 : eq.endPointsRHS[i] + 1]
+                    var = eq.RHS[0 : eq.endPointsRHS[i] + 1]
                 else:
-                    var = eq.LHS[eq.endPointsRHS[i-1] + 1 : eq.endPointsRHS[i] + 1]
+                    var = eq.RHS[eq.endPointsRHS[i-1] + 1 : eq.endPointsRHS[i] + 1]
 
                 for j in range(i+1, len(eq.isVarRHS)):
                     if eq.isVarRHS[j] == 1 and (var == eq.RHS[eq.endPointsRHS[j-1] + 1 : eq.endPointsRHS[j] + 1]):
@@ -141,7 +141,7 @@ def getRatioLR(equations):
 
     return largestLR, smallestLR
 
-def extractFeatures(equations, variables):
+def extractFeatures(equations):
     numQWEQ, maxNumOfQVar, scopeIncidence = getNumQWEQ(equations)
     largesRatioVarCon, smallestRatioVarCon = getRatioVarCon(equations)
     largestRatioLR, smallestRatioLR = getRatioLR(equations)

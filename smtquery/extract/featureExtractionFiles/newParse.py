@@ -1,3 +1,5 @@
+import math
+
 from z3 import z3
 
 from smtquery.extract.featureExtractionFiles.generalClasses import Equation
@@ -8,7 +10,96 @@ from automata.fa.dfa import DFA
 import string
 UC = string.printable
 
+def extractApproxStates(param):
+
+    for i in range(len(param)):
+        op = param[i].decl()
+
+        if str(op) == "re.++":
+            children = param[i].children()
+            left = extractApproxStates([children[0]])
+            right = extractApproxStates([children[1]])
+            return left + right
+        elif str(op) == "re.+":
+            nfa = extractApproxStates(param[i].children())
+            return nfa
+        elif str(op) == "re.*":
+            nfa = extractApproxStates(param[i].children())
+            return nfa+1
+        elif str(op) == "re.opt":
+            nfa = extractApproxStates(param[i].children())
+            return nfa + 1
+        elif str(op) == "re.inter":
+            nfa = extractApproxStates([param[i].children()[0]])
+            nfa1 = extractApproxStates([param[i].children()[1]])
+            return nfa * nfa1
+        elif str(op) == "re.union":
+            nfa = extractApproxStates([param[i].children()[0]])
+            nfa1 = extractApproxStates([param[i].children()[1]])
+            return nfa + nfa1 + 1
+        elif str(op) == "re.comp":
+            nfa = extractApproxStates(param[i].children())
+            exp = math.sqrt(nfa* math.log(nfa))
+            return math.exp(exp)
+        elif str(op) == "re.none":
+            return 1
+        elif str(op) == "re.all":
+            #all letters plus extra symbols
+            return 100
+        elif str(op) == "re.allchar":
+            #all letters capital and not
+            return 52
+        elif str(op) == "re.diff":
+            nfa1 = extractApproxStates([param[i].children()[0]])
+            nfa2 = extractApproxStates([param[i].children()[1]])
+
+            return nfa1 * nfa2
+        elif str(op) == "re.range":
+            w1 = str(param[i].children()[0])[1:-2]
+            w2 = str(param[i].children()[1])[1:-2]
+            if len(w1) > 1:
+                w1 = 'a'
+            if len(w2) > 1:
+                w2 = 'z'
+            a = ord(w2)+1 - ord(w1)
+            return a + 1
+        elif str(op) == "re.^":
+            nfa1 = extractApproxStates(param[i].children())
+
+            ran = int(param[i].vParams[0])
+            tmp = nfa1 * ran
+            return tmp
+
+        elif str(op) == "re.loop":
+
+            nfa1 = extractApproxStates(param[i].children())
+
+            ran1 = int(param[i].vParams[0])
+            ran2 = int(param[i].vParams[1])
+
+            if ran2 < ran1:
+                return 1
+            elif ran1 == ran2:
+                return nfa1 * ran1
+            else:
+                #*2 because of the union of the resulting nfa
+                return nfa1 * ran2 * 2
+        elif str(op) == "str.to_re":
+            m = str(param[i].children()[0])[1:-2]
+
+            return len(m) + 2
+        else: return 0
+
+
+
+
+
+
 def range_nfa(w1, w2):
+    if len(w1) > 1:
+        w1 = 'a'
+    if len(w2) > 1:
+        w2 = 'z'
     # Erstelle einen neuen NFA mit einem Start- und Akzeptierzustand
     #nfa = NFA(states={'q0', 'qf'}, input_symbols=set(UC), initial_state='q0', final_states={'qf'}, transitions={'q0': {'a': {'qf'}}})
 
@@ -154,6 +245,7 @@ def extractChildren(param):
             return range_nfa(w1, w2)
         elif str(op) == "re.^":
             nfa1 = extractChildren(param[i].children())
+
             ran = int(param[i].vParams[0])
             tmp = nfa1.copy()
             for i in range(ran):
@@ -258,9 +350,9 @@ def recursivelyFindRegexOrWEQ(param, WEQ, RGX, numLenCon, RGXDepth):
             WEQ.append(eq)
             #return
         elif param[i].kind() == Kind.REGEX_CONSTRAINT:
-            rgx = ""
             RGXDepth.append(getMaxRecDepth(param[i]))
             rgx = extractChildren(param[i].children()[1:])
+            #rgx = NFA(states={'q0'},input_symbols=set(),transitions={},initial_state='q0',final_states=set())
             RGX.append(rgx)
             #return
         elif param[i].kind() == Kind.LENGTH_CONSTRAINT:
@@ -346,7 +438,7 @@ def extract(ast):
             eq.displayText = lhs + " = " + rhs
             WEQ.append(eq)
         if node.kind() == Kind.REGEX_CONSTRAINT:
-
+            #rgx = NFA(states={'q0'},input_symbols=set(),transitions={},initial_state='q0',final_states=set())
             rgx = extractChildren(node.children()[1:])
             RGXDepth.append(getMaxRecDepth(node))
             RGX.append(rgx)

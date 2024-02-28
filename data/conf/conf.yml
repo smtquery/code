@@ -1,10 +1,15 @@
 solvers:
   Z3Str3:
-    binary: /home/mku/tools/z3/bin/z3 
+    binary: /usr/local/bin/z3
   Z3Seq:
-    binary: /home/mku/tools/z3/bin/z3 
+    binary: /usr/local/bin/z3
   CVC5:
-    binary: /home/mku/share/tools/cvc5/cvc5
+    binary: ./cvc5
+  CVC4:
+    binary: ./../Solver/cvc4
+  Ostrich:
+      binary: ./../Solver/ostrich/ostrich
+
 
 
 verifiers: [Z3Seq]
@@ -15,7 +20,7 @@ runParameters:
 SMTStore:
   name: DBFS
   root: data/smtfiles
-  engine_string: mariadb+mariadbconnector://smtquerydb:password@127.0.0.1:3306/smtquery
+  engine_string: mariadb+mariadbconnector://smtquery:smtquery@127.0.0.1:3306/smtquery
   intels:
     - Probes
 

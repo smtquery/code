@@ -1,7 +1,13 @@
 import hashlib
 import itertools
-import smtquery.utils.pattern
+import sys
 
+import smtquery.utils.pattern
+from smtquery.extract.featureExtractionFiles import extractFeatWE
+from smtquery.extract.featureExtractionFiles.generalClasses import Equation
+from smtquery.extract.featureExtractionFiles.newParse import extractChildren, getMaxRecDepth, extractWEQ, \
+    extractApproxStates
+from automata.fa.dfa import DFA
 from smtquery.smtcon.expr import *
 
 class ExprFun:
@@ -386,6 +392,337 @@ class HasAtom(ExprFun):
                     d_new[k] = d[k]
         return d_new
 
+
+class ApproxOfStates(ExprFun):
+    def __init__(self):
+        super().__init__ ("stateApprox", "0.0.1")
+    def apply (self, expr, data):
+        if expr.kind() == Kind.REGEX_CONSTRAINT:
+            nfa = extractApproxStates(expr.children()[1:])
+            return nfa
+        return 0
+
+    def merge(self, expr, data):
+        elems=[]
+        a = False
+        for d in data:
+            if d is not None and isinstance(d, int):
+                a = True
+                elems.append(d)
+        if a:
+            el = max(elems)
+            return el
+        return 0
+
+
+
+class maxRecDepth(ExprFun):
+    def __init__(self):
+        super().__init__ ("maxRecDepth", "0.0.1")
+
+    def apply(self, expr, data):
+
+        if expr.decl() == '=' or expr.decl() == 'ite':
+            return getMaxRecDepth(expr)
+    def merge(self, expr, data):
+        ret = []
+        a = False
+        for d in data:
+            if d is not None and isinstance(d, int):
+                a = True
+                ret.append(d)
+
+        if a:
+            return max(ret)+1
+        return 0
+
+
+
+class countITE(ExprFun):
+    def __init__(self):
+        super().__init__ ("numITE", "0.0.1")
+
+    def apply (self, expr, data):
+        if expr.decl() == 'ite':
+            return 1
+
+    def merge(self, expr, data):
+        sum = 0
+        for d in data:
+            if d is not None and isinstance(d, int):
+                sum += d
+        return sum
+
+class WEQProperties(ExprFun):
+    def __init__(self):
+        super().__init__ ("WEQProperties", "0.0.1")
+
+    def apply (self, expr, data):
+        if expr.kind() == Kind.WEQ:
+            children = expr.children()
+            lhs = children[0]
+            rhs = children[1]
+            left = []
+            left = extractWEQ(lhs, left)
+            right = []
+            right = extractWEQ(rhs, right)
+            if len(left) < 1:
+                left = [('', 0, 0)]
+            if len(right) < 1:
+                right = [('', 1, 0)]
+
+            lhs = left[0][0]  #erster eintrag der linken seite
+            lhsRange = [left[0][1]-1]  #startet bei 0 deswegen - 1
+            lhsVars = [left[0][2]]  # gibt an ob es eine variable ist oder nicht
+
+            rhs = right[0][0]  # erster eintrag der rechten seite
+            rhsRange = [right[0][1] - 1]  # startet bei 0 deswegen - 1
+            rhsVars = [right[0][2]]  # gibt an ob es eine variable ist oder nicht
+
+            for i in range(1, len(left)):
+                lhs += left[i][0]
+                lhsRange.append(lhsRange[i-1] + left[i][1])
+                lhsVars.append(left[i][2])
+            for i in range(1, len(right)):
+                rhs += right[i][0]
+                rhsRange.append(rhsRange[i-1] + right[i][1])
+                rhsVars.append(right[i][2])
+
+            eq = Equation()
+            eq.LHS = lhs
+            eq.RHS = rhs
+            eq.endPointsLHS = lhsRange
+            eq.endPointsRHS = rhsRange
+            eq.isVarLHS = lhsVars
+            eq.isVarRHS = rhsVars
+            eq.displayText = lhs + " = " + rhs
+            WEQ = [eq]
+            numQWEQ, maxNumOfQVar, scopeIncidence, largestRatioVarCon, smallestRatioVarCon, largestRatioLR, smallestRatioLR = extractFeatWE.extractFeatures(
+                WEQ)
+
+            if smallestRatioLR == 10000:
+                smallestRatioLR = 0
+            if smallestRatioVarCon == 10000:
+                smallestRatioVarCon = 0
+            return {"numQWEQ": numQWEQ, "maxNumOfQVar": maxNumOfQVar, "scopeCoincidence": scopeIncidence,
+                    "largestRatioLR": largestRatioLR, "smallestRatioLR": smallestRatioLR, "largestRatioVarCon": largestRatioVarCon,
+                    "smallestRatioVarCon": smallestRatioVarCon}
+        return {"numQWEQ": 0, "maxNumOfQVar": 0, "scopeCoincidence": 0,
+                "largestRatioLR": 0, "smallestRatioLR": 0,
+                "largestRatioVarCon": 0,
+                "smallestRatioVarCon": 0}
+
+    def merge(self, expr, data):
+        sumNumQWEQ = 0
+        tmpNumQVar = 0
+        tmpScopeCoincidence = 0
+        tmpLargestRatioLR = 0
+        tmpSmallestRatioLR = float('inf')
+        tmpLargestRatioVarCon = 0
+        tmpSmallestRatioVarCon = float('inf')
+        for d in data:
+            if d is not None and len(d) > 0:
+                sumNumQWEQ += d['numQWEQ']
+                if tmpNumQVar < d['maxNumOfQVar']:
+                    tmpNumQVar = d['maxNumOfQVar']
+                if tmpScopeCoincidence < d['scopeCoincidence']:
+                    tmpScopeCoincidence = d['scopeCoincidence']
+                if tmpLargestRatioLR < d['largestRatioLR']:
+                    tmpLargestRatioLR = d[('largestRatioLR')]
+                if tmpSmallestRatioLR > d['smallestRatioLR']:
+                    tmpSmallestRatioLR = d[('smallestRatioLR')]
+                if tmpLargestRatioVarCon < d['largestRatioVarCon']:
+                    tmpLargestRatioVarCon = d[('largestRatioVarCon')]
+                if tmpSmallestRatioVarCon > d['smallestRatioVarCon']:
+                    tmpSmallestRatioVarCon = d[('smallestRatioVarCon')]
+
+        return  {"numQWEQ": sumNumQWEQ, "maxNumOfQVar": tmpNumQVar, "scopeCoincidence": tmpScopeCoincidence,
+                    "largestRatioLR": tmpLargestRatioLR, "smallestRatioLR": tmpSmallestRatioLR, "largestRatioVarCon": tmpLargestRatioVarCon,
+                    "smallestRatioVarCon": tmpSmallestRatioVarCon}
+
+class WeqLenVars(ExprFun):
+    def __init__(self):
+        super().__init__ ("WeqLenVars", "0.0.1")
+
+    def apply (self, expr, data):
+        if (expr.kind() == Kind.LENGTH_CONSTRAINT or expr.kind()== Kind.WEQ) and Sort.String in expr.get_intel()['variables']:
+            return expr.get_intel()['variables'][Sort.String]
+        if (expr.kind() == Kind.LENGTH_CONSTRAINT or expr.kind()== Kind.WEQ) and Sort.Int in expr.get_intel()['variables']:
+            return expr.get_intel()['variables'][Sort.Int]
+        if (expr.kind() == Kind.LENGTH_CONSTRAINT or expr.kind()== Kind.WEQ) and Sort.Bool in expr.get_intel()['variables']:
+            return expr.get_intel()['variables'][Sort.Bool]
+
+    def merge(self, expr, data):
+        d_new = []
+        for d in data:
+            if d is not None and len(d) > 0:
+                # Check if the current set has any common elements with existing result sets
+                has_common_elements = any(d.intersection(dnew) for dnew in d_new)
+
+                if has_common_elements:
+                    # If there are common elements, unionize with the existing set
+                    for dnew in d_new:
+                        if d.intersection(dnew):
+                            dnew |= d
+                            break
+                else:
+                    # If no common elements, add the current set to the result sets
+                    d_new.append(d)
+        return d_new
+
+class LenConVars(ExprFun):
+    def __init__(self):
+        super().__init__ ("LenConVars","0.0.1")
+
+    def apply (self, expr, data):
+        if expr.kind() == Kind.LENGTH_CONSTRAINT and Sort.String in expr.get_intel()['variables']:
+            return expr.get_intel()['variables'][Sort.String]
+        elif expr.kind() == Kind.LENGTH_CONSTRAINT and Sort.Int in expr.get_intel()['variables']:
+            return expr.get_intel()['variables'][Sort.Int]
+
+    def merge(self, expr, data):
+        d_new = []
+        for d in data:
+            if d is not None and len(d) > 0:
+                    # Check if the current set has any common elements with existing result sets
+                has_common_elements = any(d.intersection(dnew) for dnew in d_new)
+
+                if has_common_elements:
+                        # If there are common elements, unionize with the existing set
+                    for dnew in d_new:
+                        if d.intersection(dnew):
+                            dnew |= d
+                            break
+                else:
+                        # If no common elements, add the current set to the result sets
+                    d_new.append(d)
+        return d_new
+
+
+
+class WeqVars(ExprFun):
+    def __init__(self):
+        super().__init__ ("WeqVars","0.0.1")
+
+    def apply (self, expr, data):
+        if expr.kind() == Kind.WEQ:
+            if Sort.String in expr.get_intel()['variables']:
+                return expr.get_intel()['variables'][Sort.String]
+            else:
+                return {}
+
+    def merge(self, expr, data):
+        d_new = []
+        for d in data:
+            if d is not None and len(d) > 0:
+                    # Check if the current set has any common elements with existing result sets
+                has_common_elements = any(d.intersection(dnew) for dnew in d_new)
+
+                if has_common_elements:
+                    for dnew in d_new:
+                        if d.intersection(dnew):
+                            dnew |= d
+                            break
+                else:
+                        # If no common elements, add the current set to the result sets
+                    d_new.append(d)
+        return d_new
+
+
+class numSymbols(ExprFun):
+
+    def __init__(self):
+        super().__init__ ("numSymbols", "0.0.1")
+
+    def apply (self, expr, data):
+        res = set()
+        if expr.sort() == Sort.RegEx:
+            if expr.decl() == 'str.to_re':
+                text = str(expr.children()[0])[1:-2]
+                for i in text:
+                    res.add(i)
+                data = res
+                return data
+            if expr.decl() == 're.allchar':
+                for i in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789':
+                    res.add(i)
+                data = res
+                return data
+            if expr.decl() == 're.range':
+                w1 = str(expr.children()[0])[1:-2]
+                w2 = str(expr.children()[1])[1:-2]
+                if len(w1) > 1:
+                    w1 = 'a'
+                if len(w2) > 1:
+                    w2 = 'z'
+                for i in range(ord(w1),ord(w2)+1):
+                    res.add(i)
+                data = res
+                return data
+        return data
+
+
+    def merge(self, expr, data):
+        d_new = set()
+        a = False
+        for d in data:
+            if d is not None and len(d) > 0:
+                d_new |= d
+        return d_new
+
+
+class maxNesting(ExprFun):
+    def __init__(self):
+        super().__init__ ("maxNesting","0.0.1")
+
+    def apply (self, expr, data):
+
+        if expr.kind() == Kind.REGEX_CONSTRAINT:
+            depth = getMaxRecDepth(expr)
+            return depth
+        return 0
+    def merge(self, expr, data):
+        d_new = {}
+        elems = []
+        a = False
+        for d in data:
+            if d is not None:
+                if isinstance(d, int):
+                    a = True
+                    elems.append(d)
+        if a:
+            el = max(elems)
+            return el
+        return 0
+class statesOfMinDFA(ExprFun):
+    def __init__(self):
+        super().__init__ ("minDFA", "0.0.1")
+    def apply (self, expr, data):
+        numStates= 0
+        if expr.kind() == Kind.REGEX_CONSTRAINT:
+            nfa = extractChildren(expr.children()[1:])
+            dfa = DFA.from_nfa(nfa).minify()
+            numStates = len(dfa.states)
+            data = numStates
+            return data
+        data = 0
+        return data
+
+    def merge(self, expr, data):
+        d_new = {}
+        elems=[]
+        a = False
+        for d in data:
+            if d is not None and isinstance(d, int):
+                a = True
+                elems.append(d)
+        if a:
+            el = max(elems)
+            return el
+        return 0
+
+
+
 class VariableCount(ExprFun):
     def __init__(self):
         super().__init__ ("VariableCount","0.0.1")
@@ -505,7 +842,6 @@ class RegexStructure(ExprFun):
             return data
 
         pat, regex = expr.children()[0], expr.children()[1]
-
         concatenation = not (self._isSimplePattern(pat) or pat.is_variable())
 
         complement = False
