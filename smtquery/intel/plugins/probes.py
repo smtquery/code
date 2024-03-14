@@ -66,6 +66,8 @@ class Probes:
             pr = self.getAST(smtfile,filepath)
             for (name,c) in self.intels().items():
                 self.addIntel(smtfile,pr,c[0],c[1],name)
+
+            print(pr.get_intel())
             return pr
         
     def intels (self):

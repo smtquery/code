@@ -1,16 +1,8 @@
 solvers:
   Z3Str3:
-    binary: /usr/local/bin/z3
+    binary: /Users/mku/Documents/Uni_WORK/29_SMTQuery/venv/bin/z3
   Z3Seq:
-    binary: /usr/local/bin/z3
-  CVC5:
-    binary: ./cvc5
-  CVC4:
-    binary: ./../Solver/cvc4
-  Ostrich:
-      binary: ./../Solver/ostrich/ostrich
-
-
+    binary: /Users/mku/Documents/Uni_WORK/29_SMTQuery/venv/bin/z3
 
 verifiers: [Z3Seq]
 
