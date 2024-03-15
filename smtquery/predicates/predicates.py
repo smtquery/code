@@ -1,0 +1,90 @@
+import smtquery.smtcon.exprfun
+#from smtquery.intel.plugins import Probes
+from functools import partial
+from smtquery.smtcon.expr import Kind
+from smtquery.smtcon.expr import Sort
+
+class Predicate:
+    def __init__(self,name,version,intels,probes):
+        self._name = name
+        self._version = version
+        self._intels = intels
+        self._probes = probes
+    def getName (self):
+        return self._name
+    def getVersion (self):
+        return self._version
+    def __call__ (self, smtfile):
+        return None
+
+
+## hasKind Helper
+def _kindHelper(kind,smtfile,p,intels):
+    if kind in p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])]:
+        return smtquery.qlang.predicates.Trool.TT
+    else:
+        return smtquery.qlang.predicates.Trool.FF  
+
+class HasWEQ(Predicate):
+    def __init__(self,p):
+        super().__init__('HasWEQ', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self,smtfile):
+        return _kindHelper(Kind.WEQ,smtfile,self._probes,self._intels)
+
+class HasLinears(Predicate):
+    def __init__(self,p):
+        super().__init__('HasLinears', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self, smtfile):
+        return _kindHelper(Kind.LENGTH_CONSTRAINT,smtfile,self._probes,self._intels)
+
+class HasRegex(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegex', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self, smtfile):
+        return _kindHelper(Kind.REGEX_CONSTRAINT,smtfile,self._probes,self._intels)
+
+class HasHOL(Predicate):
+    def __init__(self,p):
+        super().__init__('hasHOL', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self, smtfile):
+        return _kindHelper(Kind.HOL_FUNCTION,smtfile,self._probes,self._intels)
+
+class HasAtLeastCountVariables(Predicate):
+    def __init__(self,p):
+        super().__init__('hasAtLeastCountVariables', '0.0.1',[],p)
+
+    def __call__(self, smtfile,var_count=5):
+        vcs = self._probes.getIntel(smtfile,self._intels).get_intel()['variables']
+        if Sort.String in vcs:
+            if len(set(vcs[Sort.String])) >= var_count:
+                return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF
+    
+
+## TODO FIX
+class IsQuadratic(Predicate):
+    def __init__(self,p):
+        super().__init__('isQuadratic', '0.0.1',[],p)
+
+    def __call__(self, smtfile,max_vars=2):
+        qudratic = True
+
+        # check quadtratic without repecting the paths
+        vcs = self._probes.getIntel(smtfile,self._intels).get_intel()['variables']
+        if Sort.String in vcs:
+            if not all([vcs[Sort.String][var] <= max_vars for var in vcs[Sort.String].keys()]):
+                return smtquery.qlang.predicates.Trool.FF
+        return smtquery.qlang.predicates.Trool.TT
+        
+        """
+        for pv in [pv[Sort.String] for pv in Probes().getIntel(smtfile).get_intel()["pathVars"] if Sort.String in pv]:
+            qudratic = all([pv[var] <= max_vars for var in pv.keys()]) and qudratic
+        if qudratic:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
+        """

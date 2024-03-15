@@ -10,6 +10,7 @@ import smtquery.smtcon.smt2expr
 from functools import partial
 import logging
 from smtquery.qlang.trool import *
+import smtquery.predicates.predicates
 from datetime import datetime
 
 
@@ -19,6 +20,7 @@ class Probes:
         self._smtprobe = smtquery.smtcon.smt2expr.Z3SMTtoSExpr ()
         self._pickleBasePath = "smtquery/data/pickle"
         self.use_cache = True
+        self.intel_key_map = dict()
 
     def _storeAST(self,smtfile,ast):
         logging.debug(f"writing AST for {smtfile.getName()}")
@@ -54,32 +56,58 @@ class Probes:
             self._storeAST(smtfile,pr)
             return pr
    
-    def addIntel(self,smtfile,ast,plugin,neutral_element,name):
+    def addIntel(self,smtfile,ast,plugin,name):
         if name not in ast.intel.keys():
-            ast.add_intel_with_function(plugin.apply,plugin.merge,neutral_element,name)
+            ast.add_intel_with_function(plugin().apply,plugin().merge,plugin().neutral(),name)
             if self.use_cache:
                 self._storeAST(smtfile,ast)
 
-    def getIntel (self, smtfile):
+    def getIntel (self, smtfile, i_classes):
         with tempfile.TemporaryDirectory () as tmpdir:
             filepath = smtfile.copyOutSMTFile (tmpdir)
             pr = self.getAST(smtfile,filepath)
-            for (name,c) in self.intels().items():
-                self.addIntel(smtfile,pr,c[0],c[1],name)
 
-            print(pr.get_intel())
+            for i_class in i_classes:
+                # reserve a new intel identifier
+                if str(i_class) not in self.intel_key_map.keys():
+                    self.intel_key_map[str(i_class)] = len(self.intel_key_map.keys())
+
+                # calculate intel if needed
+                self.addIntel(smtfile,pr,i_class,self.intel_key_map[str(i_class)])
+
+            #print(pr.get_intel())
             return pr
         
+    def getIntelKey2Class(self,i_class):
+        # we might want to initialise the intel of i_class here... --> call getIntel()!                
+        if str(i_class) not in self.intel_key_map.keys():
+                self.intel_key_map[str(i_class)] = len(self.intel_key_map.keys())
+        return self.intel_key_map[str(i_class)]
+
+
+
     def intels (self):
-        return {
+        pass
+        
+        
+        """return {
             "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
             "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
             "variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
-            #"pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
-        }
+            "pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
+        }"""
 
     def predicates (self):
+        p = Probes()
         return {
+            "hasWEQ" : smtquery.predicates.predicates.HasWEQ(p),
+            "hasLinears" : smtquery.predicates.predicates.HasLinears(p),
+            "hasRegex" : smtquery.predicates.predicates.HasRegex(p),
+            "hasHOL" : smtquery.predicates.predicates.HasHOL(p),
+            "hasAtLeast5Variables" : smtquery.predicates.predicates.HasAtLeastCountVariables(p),
+            "isQuadratic" : smtquery.predicates.predicates.IsQuadratic(p),    
+        }
+        """return {
             "isQuadratic" : isQuadratic,
             "hasWEQ" : partial(hasKind,Kind.WEQ),
             "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
@@ -88,32 +116,18 @@ class Probes:
             "isSimpleRegex" : lambda smtfile: TroolAnd(isSimpleRegex(smtfile), TroolAnd(TroolNot(hasConcatenationRegex(smtfile)),TroolAnd(TroolNot(hasKind(Kind.WEQ,smtfile)),TroolNot(hasKind(Kind.LENGTH_CONSTRAINT,smtfile))))),
             "isSimRegexConcatenation" : lambda smtfile: TroolAnd(isSimpleRegex(smtfile), TroolAnd(hasConcatenationRegex(smtfile),TroolAnd(TroolNot(hasKind(Kind.WEQ,smtfile)),TroolNot(hasKind(Kind.LENGTH_CONSTRAINT,smtfile))))),
             "hasAtLeast5Variables" :  lambda smtfile: (hasAtLeastCountStringVariables(smtfile,5))
-        }
+        }"""
 
     @staticmethod
     def getName ():
         return "Probes"
 
-    
-
     @staticmethod
     def getVersion ():
         return "0.0.1"
-    
-def hasKind(kind,smtfile):
-    if kind in Probes().getIntel(smtfile).get_intel()["has"]: #smtfile.Probes.get_intel()["has"]:
-        return smtquery.qlang.predicates.Trool.TT
-    else:
-        return smtquery.qlang.predicates.Trool.FF
-
-def hasAtLeastCountStringVariables(smtfile,var_count=5):
-    vcs = Probes().getIntel(smtfile).get_intel()["#variables"]
-    if Sort.String in vcs:
-        if len(set(vcs[Sort.String].keys())) >= var_count:
-            return smtquery.qlang.predicates.Trool.TT
-    return smtquery.qlang.predicates.Trool.FF
 
 
+### hier weiter!!!
 # Regex
 def isSimpleRegex(smtfile):
     if not Probes().getIntel(smtfile).get_intel()["regex"]["complement"]:
@@ -127,23 +141,5 @@ def hasConcatenationRegex(smtfile):
     else:
         return smtquery.qlang.predicates.Trool.FF
 
-def isQuadratic(smtfile,max_vars=2):
-    qudratic = True
-
-    # check quadtratic without repecting the paths
-    vcs = Probes().getIntel(smtfile).get_intel()["#variables"]
-    if Sort.String in vcs:
-        if not all([vcs[Sort.String][var] <= max_vars for var in vcs[Sort.String].keys()]):
-            return smtquery.qlang.predicates.Trool.FF
-    return smtquery.qlang.predicates.Trool.TT
-    
-    """
-    for pv in [pv[Sort.String] for pv in Probes().getIntel(smtfile).get_intel()["pathVars"] if Sort.String in pv]:
-        qudratic = all([pv[var] <= max_vars for var in pv.keys()]) and qudratic
-    if qudratic:
-        return smtquery.qlang.predicates.Trool.TT
-    else:
-        return smtquery.qlang.predicates.Trool.FF
-    """
 def makePlugin ():
     return Probes

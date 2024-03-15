@@ -76,6 +76,8 @@ class Solver:
         shutil.copy(origsmt,newsmt)
     
     def postprocess (self,directory, stdout,time):
+        print(stdout)
+
         if "unsat" in stdout:
             return VerificationResult (Result.NotSatisfied,time,"")
         elif "sat" in stdout:

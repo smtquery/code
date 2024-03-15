@@ -22,6 +22,8 @@ class ExprFun:
         return None
     def merge(self, expr, data1, data2):
         return None
+    def neutral(self):
+        return None
 
 
 class AssertTrue(ExprFun):
@@ -38,6 +40,9 @@ class AssertTrue(ExprFun):
 
     def merge(self, expr, data):
         return sum(data)
+
+    def neutral(self):
+        return 0
 
 
 class TerminalLengths(ExprFun):
@@ -58,7 +63,9 @@ class TerminalLengths(ExprFun):
         for d in data:
             d_new += d
         return d_new
-
+    
+    def neutral(self):
+        return []
 
 class Bounded(ExprFun):
     '''
@@ -259,6 +266,9 @@ class Bounded(ExprFun):
                     res = self._mergeDicts(res, d)
                 r_data += [res]
         return r_data
+    
+    def neutral(self):
+        return dict()
 
 
 class Fragments(ExprFun):
@@ -298,6 +308,9 @@ class Fragments(ExprFun):
 
         print(qf, mx)
         return qf, mx
+    
+    def neutral(self):
+        return (False,0)
 
 class PatternMatching(ExprFun):
     '''
@@ -338,6 +351,9 @@ class PatternMatching(ExprFun):
 
     def merge(self, expr, data):
         return data
+    
+    def neutral(self):
+        return [] ## Check This
 
 class RegExLengths(ExprFun):
     '''
@@ -371,6 +387,9 @@ class RegExLengths(ExprFun):
             elif expr.decl() == 're.inter':
                 return sum(data)
         return list(filter(lambda e: e != [] and e != 0, data))
+    
+    def neutral(self):
+        return []
 
 class HasAtom(ExprFun):
     def __init__(self):
@@ -391,6 +410,9 @@ class HasAtom(ExprFun):
                 elif k in d:
                     d_new[k] = d[k]
         return d_new
+    
+    def neutral(self):
+        return dict()
 
 
 class ApproxOfStates(ExprFun):
@@ -413,7 +435,9 @@ class ApproxOfStates(ExprFun):
             el = max(elems)
             return el
         return 0
-
+    
+    def neutral(self):
+        return 0
 
 
 class maxRecDepth(ExprFun):
@@ -421,9 +445,9 @@ class maxRecDepth(ExprFun):
         super().__init__ ("maxRecDepth", "0.0.1")
 
     def apply(self, expr, data):
-
         if expr.decl() == '=' or expr.decl() == 'ite':
             return getMaxRecDepth(expr)
+        
     def merge(self, expr, data):
         ret = []
         a = False
@@ -435,8 +459,9 @@ class maxRecDepth(ExprFun):
         if a:
             return max(ret)+1
         return 0
-
-
+    
+    def neutral(self):
+        return 0
 
 class countITE(ExprFun):
     def __init__(self):
@@ -452,6 +477,9 @@ class countITE(ExprFun):
             if d is not None and isinstance(d, int):
                 sum += d
         return sum
+    
+    def neutral(self):
+        return 0
 
 class WEQProperties(ExprFun):
     def __init__(self):
@@ -539,6 +567,9 @@ class WEQProperties(ExprFun):
         return  {"numQWEQ": sumNumQWEQ, "maxNumOfQVar": tmpNumQVar, "scopeCoincidence": tmpScopeCoincidence,
                     "largestRatioLR": tmpLargestRatioLR, "smallestRatioLR": tmpSmallestRatioLR, "largestRatioVarCon": tmpLargestRatioVarCon,
                     "smallestRatioVarCon": tmpSmallestRatioVarCon}
+    
+    def neutral(self):
+        return dict()
 
 class WeqLenVars(ExprFun):
     def __init__(self):
@@ -569,6 +600,9 @@ class WeqLenVars(ExprFun):
                     # If no common elements, add the current set to the result sets
                     d_new.append(d)
         return d_new
+    
+    def neutral(self):
+        return []
 
 class LenConVars(ExprFun):
     def __init__(self):
@@ -598,6 +632,8 @@ class LenConVars(ExprFun):
                     d_new.append(d)
         return d_new
 
+    def neutral(self):
+        return []
 
 
 class WeqVars(ExprFun):
@@ -627,10 +663,12 @@ class WeqVars(ExprFun):
                         # If no common elements, add the current set to the result sets
                     d_new.append(d)
         return d_new
+    
+    def neutral(self):
+        return []
 
 
 class numSymbols(ExprFun):
-
     def __init__(self):
         super().__init__ ("numSymbols", "0.0.1")
 
@@ -669,6 +707,9 @@ class numSymbols(ExprFun):
             if d is not None and len(d) > 0:
                 d_new |= d
         return d_new
+    
+    def neutral(self):
+        return set()
 
 
 class maxNesting(ExprFun):
@@ -720,8 +761,9 @@ class statesOfMinDFA(ExprFun):
             el = max(elems)
             return el
         return 0
-
-
+    
+    def neutral(self):
+        return dict()
 
 class VariableCount(ExprFun):
     def __init__(self):
@@ -751,6 +793,9 @@ class VariableCount(ExprFun):
                         if v in d_new[t] and v in d[t]:
                             d_new[t][v]+=d[t][v]
         return d_new
+    
+    def neutral(self):
+        return dict()
 
 class VariableCountPath(ExprFun):
     def __init__(self):
@@ -828,6 +873,9 @@ class VariableCountPath(ExprFun):
             elif k in d1: 
                 r_data[k] = d1[k] if isinstance(d1[k],int) else d1[k].copy()
         return r_data
+    
+    def neutral(self):
+        return dict()
 
 
 class RegexStructure(ExprFun):
@@ -913,6 +961,9 @@ class RegexStructure(ExprFun):
         return len(lst2) >= len(lst1) and [element for element in lst2 if element in lst1] == [element for element in
                                                                                                lst1 if element in lst2]
 
+    def neutral(self):
+        return dict()
+
 
 class Plot(ExprFun):
     def __init__(self):
@@ -955,3 +1006,6 @@ class Plot(ExprFun):
             newColour = self._colourGen()
             if newColour not in colours:
                 return newColour
+            
+    def neutral(self):
+        return dict()
