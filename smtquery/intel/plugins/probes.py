@@ -68,34 +68,18 @@ class Probes:
             pr = self.getAST(smtfile,filepath)
 
             for i_class in i_classes:
-                # reserve a new intel identifier
-                if str(i_class) not in self.intel_key_map.keys():
-                    self.intel_key_map[str(i_class)] = len(self.intel_key_map.keys())
-
                 # calculate intel if needed
-                self.addIntel(smtfile,pr,i_class,self.intel_key_map[str(i_class)])
+                self.addIntel(smtfile,pr,i_class,self.getIntelKey2Class(i_class))
 
             #print(pr.get_intel())
             return pr
         
     def getIntelKey2Class(self,i_class):
         # we might want to initialise the intel of i_class here... --> call getIntel()!                
-        if str(i_class) not in self.intel_key_map.keys():
-                self.intel_key_map[str(i_class)] = len(self.intel_key_map.keys())
-        return self.intel_key_map[str(i_class)]
-
-
-
-    def intels (self):
-        pass
-        
-        
-        """return {
-            "has" : (smtquery.smtcon.exprfun.HasAtom(),dict()),
-            "regex" : (smtquery.smtcon.exprfun.RegexStructure(),dict()),
-            "variables" : (smtquery.smtcon.exprfun.VariableCount(),dict()),
-            "pathVars" : (smtquery.smtcon.exprfun.VariableCountPath(),[])
-        }"""
+        return str(i_class)
+        #if str(i_class) not in self.intel_key_map.keys():
+        #        self.intel_key_map[str(i_class)] = len(self.intel_key_map.keys())
+        #return self.intel_key_map[str(i_class)]
 
     def predicates (self):
         p = Probes()
@@ -104,19 +88,11 @@ class Probes:
             "hasLinears" : smtquery.predicates.predicates.HasLinears(p),
             "hasRegex" : smtquery.predicates.predicates.HasRegex(p),
             "hasHOL" : smtquery.predicates.predicates.HasHOL(p),
-            "hasAtLeast5Variables" : smtquery.predicates.predicates.HasAtLeastCountVariables(p),
-            "isQuadratic" : smtquery.predicates.predicates.IsQuadratic(p),    
+            "hasAtLeast5StringVariables" : smtquery.predicates.predicates.HasAtLeastCountVariables(p),
+            "isQuadratic" : smtquery.predicates.predicates.IsQuadratic(p),
+            "isSimpleRegex" : smtquery.predicates.predicates.IsSimpleRegex(p), 
+            "hasConcatenationRegex" : smtquery.predicates.predicates.HasConcatenationRegex(p), 
         }
-        """return {
-            "isQuadratic" : isQuadratic,
-            "hasWEQ" : partial(hasKind,Kind.WEQ),
-            "hasLinears" : partial(hasKind,Kind.LENGTH_CONSTRAINT),
-            "hasRegex" : partial(hasKind,Kind.REGEX_CONSTRAINT),
-            "hasHOL" : partial(hasKind,Kind.HOL_FUNCTION),
-            "isSimpleRegex" : lambda smtfile: TroolAnd(isSimpleRegex(smtfile), TroolAnd(TroolNot(hasConcatenationRegex(smtfile)),TroolAnd(TroolNot(hasKind(Kind.WEQ,smtfile)),TroolNot(hasKind(Kind.LENGTH_CONSTRAINT,smtfile))))),
-            "isSimRegexConcatenation" : lambda smtfile: TroolAnd(isSimpleRegex(smtfile), TroolAnd(hasConcatenationRegex(smtfile),TroolAnd(TroolNot(hasKind(Kind.WEQ,smtfile)),TroolNot(hasKind(Kind.LENGTH_CONSTRAINT,smtfile))))),
-            "hasAtLeast5Variables" :  lambda smtfile: (hasAtLeastCountStringVariables(smtfile,5))
-        }"""
 
     @staticmethod
     def getName ():
@@ -125,21 +101,6 @@ class Probes:
     @staticmethod
     def getVersion ():
         return "0.0.1"
-
-
-### hier weiter!!!
-# Regex
-def isSimpleRegex(smtfile):
-    if not Probes().getIntel(smtfile).get_intel()["regex"]["complement"]:
-        return smtquery.qlang.predicates.Trool.TT
-    else:
-        return smtquery.qlang.predicates.Trool.FF
-
-def hasConcatenationRegex(smtfile):
-    if Probes().getIntel(smtfile).get_intel()["regex"]["concatenation"]:
-        return smtquery.qlang.predicates.Trool.TT
-    else:
-        return smtquery.qlang.predicates.Trool.FF
 
 def makePlugin ():
     return Probes

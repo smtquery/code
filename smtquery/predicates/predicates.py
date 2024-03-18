@@ -55,12 +55,12 @@ class HasHOL(Predicate):
 
 class HasAtLeastCountVariables(Predicate):
     def __init__(self,p):
-        super().__init__('hasAtLeastCountVariables', '0.0.1',[],p)
+        super().__init__('hasAtLeastCountVariables', '0.0.1',[smtquery.smtcon.exprfun.VariableCount],p)
 
-    def __call__(self, smtfile,var_count=5):
-        vcs = self._probes.getIntel(smtfile,self._intels).get_intel()['variables']
+    def __call__(self, smtfile,var_count=5,var_type=Sort.String):
+        vcs = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
         if Sort.String in vcs:
-            if len(set(vcs[Sort.String])) >= var_count:
+            if len(set(vcs[var_type])) >= var_count:
                 return smtquery.qlang.predicates.Trool.TT
         return smtquery.qlang.predicates.Trool.FF
     
@@ -68,13 +68,13 @@ class HasAtLeastCountVariables(Predicate):
 ## TODO FIX
 class IsQuadratic(Predicate):
     def __init__(self,p):
-        super().__init__('isQuadratic', '0.0.1',[],p)
+        super().__init__('isQuadratic', '0.0.1',[smtquery.smtcon.exprfun.VariableCount],p)
 
     def __call__(self, smtfile,max_vars=2):
         qudratic = True
 
         # check quadtratic without repecting the paths
-        vcs = self._probes.getIntel(smtfile,self._intels).get_intel()['variables']
+        vcs = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
         if Sort.String in vcs:
             if not all([vcs[Sort.String][var] <= max_vars for var in vcs[Sort.String].keys()]):
                 return smtquery.qlang.predicates.Trool.FF
@@ -88,3 +88,30 @@ class IsQuadratic(Predicate):
         else:
             return smtquery.qlang.predicates.Trool.FF
         """
+
+
+## respect hasATOM
+class IsSimpleRegex(Predicate):
+    def __init__(self,p):
+        super().__init__('isSimpleRegex', '0.0.1',[smtquery.smtcon.exprfun.RegexStructure,smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self, smtfile):
+        try:
+            if not self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]["complement"] and Kind.REGEX_CONSTRAINT in self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[1])]:
+                return smtquery.qlang.predicates.Trool.TT
+            else:
+                return smtquery.qlang.predicates.Trool.FF
+        except:
+            return smtquery.qlang.predicates.Trool.FF
+class HasConcatenationRegex(Predicate):
+    def __init__(self,p):
+        super().__init__('hasConcatenationRegex', '0.0.1',[smtquery.smtcon.exprfun.RegexStructure,smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self, smtfile):
+        try:
+            if self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]["concatenation"] and Kind.REGEX_CONSTRAINT in self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[1])]:
+                return smtquery.qlang.predicates.Trool.TT
+            else:
+                return smtquery.qlang.predicates.Trool.FF
+        except:
+            return smtquery.qlang.predicates.Trool.FF
