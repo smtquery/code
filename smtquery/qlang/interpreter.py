@@ -11,8 +11,7 @@ class InstanceEnumerator:
     def enumerate (self):
         for gen in self._subgens:
             yield from gen
-
-
+            
 class InstanceSelector:
     def Select (self,node):
         #print (node)
