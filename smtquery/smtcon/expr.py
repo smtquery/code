@@ -45,6 +45,17 @@ class ASTRef:
             values+=[e.get_intel()[key]]
         self.intel[key] = m(self,values)
 
+    def add_intels_with_functions(self,plugins):
+        # plugin().apply,plugin().merge,plugin().neutral()
+        values = []
+
+        for e in self.nodes:
+            e.add_intels_with_functions(plugins)
+            values+=[e.get_intel()]
+
+        for (p_name,p) in plugins:
+            self.intel[p_name] = p().merge(self,[values[i][p_name] for i in range(0,len(values))])
+
     def id(self):
         return 0
 
@@ -184,6 +195,15 @@ class ExprRef:
             c.add_intel_with_function(f,m,_condCopy(neutral),key)
             values+=[c.get_intel()[key]]
         self.intel[key] = f(self,m(self,values))
+
+    def add_intels_with_functions(self,plugins):
+        values = []
+        for c in self.children():
+            c.add_intels_with_functions(plugins)
+            values+=[c.get_intel()]
+        
+        for (p_name,p) in plugins:
+            self.intel[p_name] = p().apply(self,p().merge(self,[values[i][p_name] for i in range(0,len(values))]))
 
     def apply_function(self,f):
         for c in self.children():

@@ -717,13 +717,12 @@ class maxNesting(ExprFun):
         super().__init__ ("maxNesting","0.0.1")
 
     def apply (self, expr, data):
-
         if expr.kind() == Kind.REGEX_CONSTRAINT:
             depth = getMaxRecDepth(expr)
             return depth
         return 0
+    
     def merge(self, expr, data):
-        d_new = {}
         elems = []
         a = False
         for d in data:
@@ -735,6 +734,11 @@ class maxNesting(ExprFun):
             el = max(elems)
             return el
         return 0
+    
+    def neutral(self):
+        return 0
+
+
 class statesOfMinDFA(ExprFun):
     def __init__(self):
         super().__init__ ("minDFA", "0.0.1")

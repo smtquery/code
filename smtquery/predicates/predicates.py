@@ -64,8 +64,6 @@ class HasAtLeastCountVariables(Predicate):
                 return smtquery.qlang.predicates.Trool.TT
         return smtquery.qlang.predicates.Trool.FF
     
-
-## TODO FIX
 class IsQuadratic(Predicate):
     def __init__(self,p):
         super().__init__('isQuadratic', '0.0.1',[smtquery.smtcon.exprfun.VariableCount],p)
@@ -89,8 +87,6 @@ class IsQuadratic(Predicate):
             return smtquery.qlang.predicates.Trool.FF
         """
 
-
-## respect hasATOM
 class IsSimpleRegex(Predicate):
     def __init__(self,p):
         super().__init__('isSimpleRegex', '0.0.1',[smtquery.smtcon.exprfun.RegexStructure,smtquery.smtcon.exprfun.HasAtom],p)
@@ -103,6 +99,7 @@ class IsSimpleRegex(Predicate):
                 return smtquery.qlang.predicates.Trool.FF
         except:
             return smtquery.qlang.predicates.Trool.FF
+        
 class HasConcatenationRegex(Predicate):
     def __init__(self,p):
         super().__init__('hasConcatenationRegex', '0.0.1',[smtquery.smtcon.exprfun.RegexStructure,smtquery.smtcon.exprfun.HasAtom],p)
@@ -115,3 +112,20 @@ class HasConcatenationRegex(Predicate):
                 return smtquery.qlang.predicates.Trool.FF
         except:
             return smtquery.qlang.predicates.Trool.FF
+        
+class HasRegexDepth(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.maxNesting],p)
+
+    def __call__(self, smtfile,maxNested=50):
+        if 0 < self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])] <= maxNested:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
+        
+
+"""
+# apply functions als Liste mit einem durchlauf für alle Intels
+# intels regstrieren in mutators und extractors
+
+"""

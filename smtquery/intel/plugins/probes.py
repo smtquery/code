@@ -55,7 +55,7 @@ class Probes:
             pr = self._smtprobe.getAST (filepath)
             self._storeAST(smtfile,pr)
             return pr
-   
+    """
     def addIntel(self,smtfile,ast,plugin,name):
         if name not in ast.intel.keys():
             ast.add_intel_with_function(plugin().apply,plugin().merge,plugin().neutral(),name)
@@ -73,6 +73,17 @@ class Probes:
 
             #print(pr.get_intel())
             return pr
+    """
+    def getIntel (self, smtfile, i_classes):
+        with tempfile.TemporaryDirectory () as tmpdir:
+            filepath = smtfile.copyOutSMTFile (tmpdir)
+            ast = self.getAST(smtfile,filepath)
+            filtered_i_classes = [(self.getIntelKey2Class(c),c) for c in i_classes if self.getIntelKey2Class(c) not in ast.intel.keys()]
+            ast.add_intels_with_functions(filtered_i_classes)
+
+            if self.use_cache and len(filtered_i_classes) > 0:
+                self._storeAST(smtfile,ast)
+            return ast
         
     def getIntelKey2Class(self,i_class):
         # we might want to initialise the intel of i_class here... --> call getIntel()!                
@@ -92,6 +103,7 @@ class Probes:
             "isQuadratic" : smtquery.predicates.predicates.IsQuadratic(p),
             "isSimpleRegex" : smtquery.predicates.predicates.IsSimpleRegex(p), 
             "hasConcatenationRegex" : smtquery.predicates.predicates.HasConcatenationRegex(p), 
+            "hasMaxRegexDepthOf50" : smtquery.predicates.predicates.HasRegexDepth(p),
         }
 
     @staticmethod
