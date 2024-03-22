@@ -19,7 +19,7 @@ class Probes:
         super().__init__ ()
         self._smtprobe = smtquery.smtcon.smt2expr.Z3SMTtoSExpr ()
         self._pickleBasePath = "smtquery/data/pickle"
-        self.use_cache = True
+        self.use_cache = False #True
         self.intel_key_map = dict()
 
     def _storeAST(self,smtfile,ast):

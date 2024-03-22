@@ -1013,3 +1013,59 @@ class Plot(ExprFun):
             
     def neutral(self):
         return dict()
+    
+
+class SourceVariables(ExprFun):
+    def __init__(self):
+        super().__init__ ("SourceVariables","0.0.1") 
+    def apply (self, expr, data):
+        if expr.kind() == Kind.WEQ:
+            l_exp,r_exp = expr.children()[0],expr.children()[1]
+            l,r = str(l_exp.decl()),str(r_exp.decl())
+            valid_weq = False
+            if l_exp.is_variable() and l not in data["source"]:
+                data["source"].add(l)
+                if Sort.String in r_exp.get_intel()['variables']:
+                    data["used"].update(set(r_exp.get_intel()['variables'][Sort.String]))
+                    if len(set(r_exp.get_intel()['variables'][Sort.String])) == 0:
+                        data["used"].add(l)
+                    if l in set(r_exp.get_intel()['variables'][Sort.String]) and not r_exp.is_variable():
+                        data["SL"] = False
+                else:
+                    data["used"].add(l)
+                valid_weq = True
+            if r_exp.is_variable() and r not in data["source"]:
+                data["source"].add(r)
+                if Sort.String in l_exp.get_intel()['variables']:
+                    data["used"].update(set(l_exp.get_intel()['variables'][Sort.String]))
+                    if len(set(l_exp.get_intel()['variables'][Sort.String])) == 0:
+                        data["used"].add(r)
+                    if r in set(l_exp.get_intel()['variables'][Sort.String]) and not l_exp.is_variable():
+                        data["SL"] = False
+                else:
+                    data["used"].add(r)
+                valid_weq = True
+            if not valid_weq:
+                data["SL"] = False
+        elif expr.kind() == Kind.REGEX_CONSTRAINT:
+            l_exp,r_exp = expr.children()[0],expr.children()[1]
+            l,r = str(l_exp.decl()),str(r_exp.decl())
+            if l_exp.is_variable() and l not in data["source"]:
+                data["source"].add(l)
+                data["used"].add(l)
+            elif Sort.String in l_exp.get_intel()['variables'] and len(l_exp.get_intel()['variables'][Sort.String]) != 0:
+                data["SL"] = False
+        elif (type(expr) == smtquery.smtcon.expr.BoolExpr and expr.kind() == Kind.OTHER and str(expr.decl()) != "and") or type(expr) in [Kind.HOL_FUNCTION,Kind.LENGTH_CONSTRAINT]:
+            data["SL"] = False
+        #else: 
+        #    print(expr.kind(),expr.decl())
+        return data
+    def merge(self, expr, data):
+        d_new = self.neutral()
+        for d in data:
+            d_new["source"].update(d["source"])
+            d_new["used"].update(d["used"])
+            d_new["SL"] = d_new["SL"] and d["SL"]
+        return d_new
+    def neutral(self):
+        return {"source" : set(), "used" : set(), "SL" : True}
