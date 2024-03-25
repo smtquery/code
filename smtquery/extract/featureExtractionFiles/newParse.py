@@ -450,3 +450,4 @@ def extract(ast):
             recursivelyFindRegexOrWEQ(param, WEQ, RGX, numLenCon, RGXDepth)
     return allVars, stringVars, WEQ, RGX, numLenCon[0], numAsserts, maxRecDepth, RGXDepth
 
+
