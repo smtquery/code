@@ -147,3 +147,4 @@ def extractFeatures(equations):
     largestRatioLR, smallestRatioLR = getRatioLR(equations)
     return numQWEQ, maxNumOfQVar, scopeIncidence, largesRatioVarCon, smallestRatioVarCon, largestRatioLR, smallestRatioLR
 
+
