@@ -122,6 +122,98 @@ class HasRegexDepth(Predicate):
             return smtquery.qlang.predicates.Trool.TT
         else:
             return smtquery.qlang.predicates.Trool.FF
+            
+class HasApproxStates(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.stateApprox],p)
+
+    def __call__(self, smtfile,maxApproxStates=500):
+        if 0 < self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])] <= maxApproxStates:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
+           
+class HasMinDFAStates(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.minDFA],p)
+
+    def __call__(self, smtfile,maxStates=500):
+        if 0 < self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])] <= maxStates:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
+
+class HasRecDepth(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.maxRecDepth],p)
+
+    def __call__(self, smtfile,recDepth=10):
+        if 0 < self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])] <= recDepth:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF   
+
+class HasNumITE(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.numITE],p)
+
+    def __call__(self, smtfile,numITE=500):
+        if 0 < self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])] <= numITE:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF  
+            
+            
+class HasNumSymbols(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.numSymbols],p)
+
+    def __call__(self, smtfile,numSymb=500):
+        if 0 < len(self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]) <= numSymb:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
+
+class HasWEQVars(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.WeqVars],p)
+
+    def __call__(self, smtfile,weqVars=50):
+        if 0 < len(max(self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])], key=len, default=set())) <= weqVars:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
+            
+class HasWEQLenVars(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.WeqLenVars],p)
+
+    def __call__(self, smtfile,weqLenVars=50):
+        if 0 < len(max(self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])], key=len, default=set())) <= weqLenVars:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
+            
+class HasLenVars(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.LenConVars],p)
+
+    def __call__(self, smtfile,lenVars=50):
+        if 0 < len(max(self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])], key=len, default=set())) <= lenVars:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
+            
+class HasScopeCoincidence(Predicate):
+    def __init__(self,p):
+        super().__init__('hasRegexDepth', '0.0.1',[smtquery.smtcon.exprfun.WEQProperties],p)
+
+    def __call__(self, smtfile,scope=7):
+    	prop = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        if 0 < prop["scopeCoincidence"] <= scope:
+            return smtquery.qlang.predicates.Trool.TT
+        else:
+            return smtquery.qlang.predicates.Trool.FF
         
 
 """
