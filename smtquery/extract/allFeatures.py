@@ -1,5 +1,7 @@
+import joblib
 import matplotlib.pyplot as plt
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
@@ -17,13 +19,25 @@ from sklearn import tree
 from dtreeviz.trees import dtreeviz
 import smtquery.config
 
-class Features:
+
+class allFeatures:
     def __init__(self):
         self._solvers = None
         self._output_folder = None
-        
+#check for duplicates with different solvers, unify them
+    def preprocess(self, result_df):
+        columns_to_check = ['numStringVar', 'varRatio', 'numWEQ', 'numQWEQ', 'maxNumOfQVar', 'scopeIncidence',
+                            'largestRatioVarCon', 'smallestRatioVarCon', 'largestRatioLR', 'smallestRatioLR', 'numReg',
+                            'maxSymb', 'maxDepth', 'maxNumState', 'numLin', 'numAsserts', 'maxRecDepth', 'LenConVars',
+                            'WEQVars', 'WeqLenVars', 'numITE']
+        duplicates = result_df.duplicated(subset=columns_to_check, keep=False)
+        dominant_classes = result_df.groupby(columns_to_check)['solver'].apply(lambda x: x.mode().iloc[0])
+        result_df.loc[duplicates, 'solver'] = result_df[duplicates].set_index(columns_to_check).index.map(
+            dominant_classes).values
+        return result_df
+
     def create_report(self, dataframe, benchmarkName):
-        report = "Report for Benchmark: " + benchmarkName + " with " + str(len(dataframe.index)) + " instances \n"
+        report = "Report for all Benchmarks: " + " with " + str(len(dataframe.index)) + " instances \n"
         report = report + "\n"
 
         columns = dataframe.columns
@@ -31,85 +45,68 @@ class Features:
             report = report + column + " "
             avgc = dataframe[column].mean()
             report = report + f"Average: {avgc}"
-            for i,s in enumerate(self.getSolvers ()):
+            for i, s in enumerate(self.getSolvers()):
                 mean = dataframe.loc[dataframe['solver'] == i, column].mean()
-                
+
                 report += f" Average for {s}: {mean}"
             report += "\n"
-            notSolved = len(dataframe.index) - len(dataframe.dropna().index)
         return report
 
-
-
-    def trainAndTestDTC(self, dtc, data, Y, crit, depth, feat, split):
+    def trainAndTestRF(self, rf, X, Y):
         y = Y.values.ravel()
-        X = data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-        dtc.criterion = crit
-        dtc.max_depth = depth
-        dtc.max_features = feat
-        dtc.splitter = split
-        dtc.fit(X_train, y_train)
-        #in case some solver could not solve anything; the class names must be extracted so the right ones will be displayed
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
+        rf.fit(X_train, y_train)
+        # in case some solver could not solve anything; the class names must be extracted so the right ones will be displayed
         sorted_list = Y.sort_values().drop_duplicates().tolist()
         class_names = []
         for i, s in enumerate(self.getSolvers()):
             if i in sorted_list:
                 class_names.append(s)
 
-        viz = dtreeviz(dtc, X_train, y_train,
-                      target_name="target",
-                      feature_names=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
-                     "largesRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
-                     "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
-                     "maxRecDepth", "LenConVars", "WEQVars", "WeqLenVars", "numITE"],
-                     
-                     class_names=class_names
-                       )
-        return viz
-
-
+        y_pred = rf.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        print("Accuracy:", accuracy)
+        tree = rf.estimators_[0]
+        path = os.path.join(self.getOutputFolder(), "allFeatures/random_forest.joblib")
+        joblib.dump(rf, path)
+        return
 
     def buildTree(self, data):
+        data = self.preprocess(data)
         # Parameter for Decision Tree
-        criterion = 'gini'
-        max_d = 10
-        max_f = None
-        splitter = 'best'
-        Y = data.iloc[:, 21]
-        data = data.iloc[:, :21]
-        dtc = DecisionTreeClassifier()
-        return self.trainAndTestDTC(dtc, data, Y, criterion, max_d, max_f, splitter)
+        X = data.drop(columns=['solver', 'path'])
+        y = data['solver']
+        rf = RandomForestClassifier(n_estimators=200, max_depth=None, max_features='sqrt', min_samples_leaf=1, min_samples_split=2, bootstrap=True, class_weight='balanced', criterion='entropy')
+        self.trainAndTestRF(rf, X, y)
+        return
 
     @staticmethod
     def getName():
-        return "Features"
+        return "AllFeatures"
 
-    def getSolvers (self):
+    def getSolvers(self):
         if self._solvers == None:
-            self._solvers = list(smtquery.config.getConfiguration().getSolvers().keys ())
+            self._solvers = list(smtquery.config.getConfiguration().getSolvers().keys())
         return self._solvers
 
-    def getOutputFolder (self):
+    def getOutputFolder(self):
         if self._output_folder == None:
-            self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"Features")
+            self._output_folder = os.path.join(smtquery.config.getConfiguration().getOutputLocation(), "Features")
         return self._output_folder
-    
-    def finalise(self, results, total):        
+
+    def finalise(self, results, total):
         dataframe = pd.DataFrame(
             columns=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
                      "largestRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
                      "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
                      "maxRecDepth", "LenConVars", "WEQVars", "WeqLenVars", "numITE", "solver", "path"], data=results)
 
-        path = os.path.join (self.getOutputFolder (),dataframe["path"][0].split(":")[0])
+        path = os.path.join(self.getOutputFolder(), "allFeatures")
         os.makedirs(path, exist_ok=True)
-        dataframe.to_csv(os.path.join (path,"features.csv"), index=False)
+        dataframe.to_csv(os.path.join(path, "features.csv"), index=False)
 
         df = dataframe
-        viz = self.buildTree(df.dropna())
-        viz.save(os.path.join (path,"decisionTree.svg"))
-
+        self.buildTree(df.dropna())
         report = self.create_report(dataframe, dataframe["path"][0].split(":")[0])
         with open(f"{path}/report.txt", 'w') as f:
             f.write(report)
@@ -128,8 +125,6 @@ class Features:
         Probes().addIntel(smtfile, ast, exprfun.WeqLenVars(), dict(), "WeqLenVars")
         Probes().addIntel(smtfile, ast, exprfun.ApproxOfStates(), dict(), "stateApprox")
 
-
-
         intel = ast.intel
         numStringVars = 0
         vars = intel["variables"]
@@ -138,11 +133,10 @@ class Features:
             numStringVars = len(vars[Sort.String])
             allVars = len(vars[Sort.String])
         if Sort.Bool in vars:
-
             allVars += len(vars[Sort.Bool])
         if Sort.Int in vars:
             allVars += len(vars[Sort.Int])
-        varRatio = numStringVars/allVars
+        varRatio = numStringVars / allVars
         numWEQ = 0
         numLenCon = 0
         numReg = 0
@@ -161,7 +155,6 @@ class Features:
         LenConVars = 0
         WeqLenVars = 0
         maxRecDepth = 0
-
 
         if Kind.WEQ in intel["has"]:
             numWEQ = intel["has"][Kind.WEQ]
@@ -212,14 +205,11 @@ class Features:
                     solvertime = res[s]["time"]
                     solverindex = i
 
-
         s_row = [numStringVars, varRatio, numWEQ, numQWEQ, maxNumQVar, scopeCoincidence, largestRatioVarCon,
-                 smallestRatioVarCon, largestRatioLR, smallestRatioLR, numReg, numRegSymbols, maxNesting, nfaStates, numLenCon,
+                 smallestRatioVarCon, largestRatioLR, smallestRatioLR, numReg, numRegSymbols, maxNesting, nfaStates,
+                 numLenCon,
                  numAsserts, maxRecDepth, LenConVars, WEQVars, WeqLenVars, numITE, solverindex, name]
         return s_row
 
-
-
 def PullExtractor():
-    return [Features]
-
+    return [allFeatures]

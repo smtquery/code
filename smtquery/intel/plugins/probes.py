@@ -106,6 +106,15 @@ class Probes:
             "hasConcatenationRegex" : smtquery.predicates.predicates.HasConcatenationRegex(p), 
             "hasMaxRegexDepthOf50" : smtquery.predicates.predicates.HasRegexDepth(p),
             "purelyPositive" : smtquery.predicates.predicates.purelyPositive(p),
+            "hasMaxApproxStates"  : smtquery.predicates.predicates.HasApproxStates(p),
+            "hasMaxDFAStates" : smtquery.predicates.predicates.HasMinDFAStates(p),
+            "hasMaxRecDepth" : smtquery.predicates.predicates.HasRecDepth(p),
+            "hasNumITE" : smtquery.predicates.predicates.HasNumITE(p),
+            "hasMaxNumSymbols" : smtquery.predicates.predicates.HasNumSymbols(p),
+            "hasMaxWEQVars" : smtquery.predicates.predicates.HasWEQVars(p),
+            "hasMaxWEQLenVars" : smtquery.predicates.predicates.HasWEQLenVars(p),
+            "hasMaxLenVars" : smtquery.predicates.predicates.HasLenVars(p),
+            "hasMaxScopeCoincidence" : smtquery.predicates.predicates.HaScopeCoincidence(p)
         }
 
     @staticmethod
