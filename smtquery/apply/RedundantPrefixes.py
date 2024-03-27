@@ -9,6 +9,7 @@ from smtquery.intel.plugins.probes import Probes
 class EqualsTrue:
     output_folder = 'output/prefix_true'
     root = '.'
+    required_intel = []
 
     @staticmethod
     def getName():
@@ -16,7 +17,7 @@ class EqualsTrue:
 
     def __call__(self, smtfile):
         new_ast = ASTRef()
-        ast = Probes().getIntel(smtfile)
+        ast = Probes().getIntel(smtfile,[])
 
         for ass in ast:
             while ass.decl() == '=' and str(ass.children()[0]) == 'true':
@@ -26,7 +27,7 @@ class EqualsTrue:
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
             handle.write(str(new_ast))
         new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(),self.root+"/"+self._getOutputFilePath(smtfile))
-        Probes().getIntel(new_smtfile)
+        Probes().getIntel(new_smtfile,self.required_intel)
         return new_smtfile
 
     def _getOutputFilePath(self,smtfile):
@@ -36,6 +37,7 @@ class EqualsTrue:
 class ReduceNegations:
     output_folder = 'output/prefix_negations'
     root = '.'
+    required_intel = []
 
     @staticmethod
     def getName():
@@ -43,7 +45,7 @@ class ReduceNegations:
 
     def __call__(self, smtfile):
         new_ast = ASTRef()
-        ast = Probes().getIntel(smtfile)
+        ast = Probes().getIntel(smtfile,self.required_intel)
 
         for ass in ast:
             while ass.decl() == 'not' and isinstance(ass.children()[0], BoolExpr) and ass.children()[0].decl() == 'not':
@@ -53,7 +55,7 @@ class ReduceNegations:
         with smtquery.ui.output.makeFile(self._getOutputFilePath(smtfile)) as handle:
             handle.write(str(new_ast))
         new_smtfile = smtquery.storage.smt.fs.SMTFile(smtfile.getName(),self.root+"/"+self._getOutputFilePath(smtfile))
-        Probes().getIntel(new_smtfile)
+        Probes().getIntel(new_smtfile,self.required_intel)
         return new_smtfile
 
 

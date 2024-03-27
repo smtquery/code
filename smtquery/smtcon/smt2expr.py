@@ -113,6 +113,7 @@ class Z3SMTtoSExpr(SMTtoSExpr):
             for c in children:
                 node_id+=1
                 t_c = self._prepareExpr(c,node_id)
+                t_c.vParent = e
                 e.vChildren+=[t_c]
                 
                 c_children = c.children()

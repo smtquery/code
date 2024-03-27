@@ -75,12 +75,13 @@ class Probes:
             return pr
     """
     def getIntel (self, smtfile, i_classes):
+        logging.debug(f"accessing intel of {smtfile.getName()} with plugins {i_classes}")
         with tempfile.TemporaryDirectory () as tmpdir:
             filepath = smtfile.copyOutSMTFile (tmpdir)
             ast = self.getAST(smtfile,filepath)
             filtered_i_classes = [(self.getIntelKey2Class(c),c) for c in i_classes if self.getIntelKey2Class(c) not in ast.intel.keys()]
             ast.add_intels_with_functions(filtered_i_classes)
-
+        
             if self.use_cache and len(filtered_i_classes) > 0:
                 self._storeAST(smtfile,ast)
             return ast
@@ -104,6 +105,7 @@ class Probes:
             "isSimpleRegex" : smtquery.predicates.predicates.IsSimpleRegex(p), 
             "hasConcatenationRegex" : smtquery.predicates.predicates.HasConcatenationRegex(p), 
             "hasMaxRegexDepthOf50" : smtquery.predicates.predicates.HasRegexDepth(p),
+            "purelyPositive" : smtquery.predicates.predicates.purelyPositive(p),
         }
 
     @staticmethod

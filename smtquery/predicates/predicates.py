@@ -123,9 +123,17 @@ class HasRegexDepth(Predicate):
         else:
             return smtquery.qlang.predicates.Trool.FF
         
+class purelyPositive(Predicate):
+    def __init__(self,p):
+        super().__init__('purelyPositive', '0.0.1',[smtquery.smtcon.exprfun.isNegated],p)
 
-"""
-# apply functions als Liste mit einem durchlauf für alle Intels
-# intels regstrieren in mutators und extractors
+    def __call__(self,smtfile):
+        nodes = self._probes.getIntel(smtfile,self._intels).nodes
+        
+        while len(nodes) > 0:
+            n = nodes.pop()
+            if n.get_intel()[self._probes.getIntelKey2Class(self._intels[0])]:
+                return smtquery.qlang.predicates.Trool.FF
+            nodes+=n.children()
 
-"""
+        return smtquery.qlang.predicates.Trool.TT

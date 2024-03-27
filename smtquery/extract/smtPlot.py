@@ -21,7 +21,7 @@ class SMTPlot:
         with smtquery.ui.output.makePlainMessager () as mess:
             mess.message (smtfile.getName())
             self.colours = dict()
-            ast = Probes().getIntel(smtfile)
+            ast = Probes().getIntel(smtfile,[])
             dot = graphviz.Digraph('G', format='pdf')
             self._buildGraph(ast,dot)
             dot.render(self._getOutputFileName(smtfile.getName()),cleanup=True)

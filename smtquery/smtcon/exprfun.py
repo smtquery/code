@@ -395,7 +395,7 @@ class HasAtom(ExprFun):
     def __init__(self):
         super().__init__ ("HasAtom","0.0.1")
         
-    def apply (self, expr, data):
+    def apply (self, expr, data):     
         if expr.kind() not in data:
             data[expr.kind()] = 0
         data[expr.kind()]+=1
@@ -1069,3 +1069,16 @@ class SourceVariables(ExprFun):
         return d_new
     def neutral(self):
         return {"source" : set(), "used" : set(), "SL" : True}
+    
+class isNegated(ExprFun):
+    def __init__(self):
+        super().__init__('isNegated', '0.0.1')
+
+    def apply(self, expr, data):
+        return 1 == sum([1 for t in expr.getPathToRoot() if str(t.decl()) == "not"])%2
+
+    def merge(self, expr, data):
+        return False
+
+    def neutral(self):
+        return False

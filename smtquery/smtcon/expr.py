@@ -44,9 +44,8 @@ class ASTRef:
             e.add_intel_with_function(f,m,_condCopy(neutral),key)
             values+=[e.get_intel()[key]]
         self.intel[key] = m(self,values)
-
+        
     def add_intels_with_functions(self,plugins):
-        # plugin().apply,plugin().merge,plugin().neutral()
         values = []
 
         for e in self.nodes:
@@ -60,6 +59,9 @@ class ASTRef:
         return 0
 
     def kind(self):
+        return None
+    
+    def parent(self):
         return None
 
     def apply_function(self,f):
@@ -94,6 +96,9 @@ class ASTRef:
                 else:
                     pass
         return d_new
+    
+    def getPathToRoot(self):
+        return []
 
     ## output
     def _getPPSMTHeader(self):
@@ -149,6 +154,7 @@ class ExprRef:
     vSort = None
     vKind = Kind.OTHER
     vId = None
+    vParent = None
 
     # additional data
     intel = None
@@ -165,7 +171,10 @@ class ExprRef:
 
     def children(self):
         return self.vChildren
-
+    
+    def parent(self):
+        return self.vParent
+    
     def decl(self):
         return self.vDecl
 
@@ -198,7 +207,7 @@ class ExprRef:
 
     def add_intels_with_functions(self,plugins):
         values = []
-        for c in self.children():
+        for c in self.vChildren:
             c.add_intels_with_functions(plugins)
             values+=[c.get_intel()]
         
@@ -215,6 +224,14 @@ class ExprRef:
 
     def reset_intel(self):
         self.intel = dict()
+    
+    def getPathToRoot(self):
+        path = []
+        t = self
+        while t.id() != 0:
+            t = t.parent()
+            path+=[t]
+        return path
 
     def __repr__(self):
         return print_expr(self)
