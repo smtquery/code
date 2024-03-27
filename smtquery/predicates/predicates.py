@@ -125,7 +125,7 @@ class HasRegexDepth(Predicate):
             
 class HasApproxStates(Predicate):
     def __init__(self,p):
-        super().__init__('hasApproxStates', '0.0.1',[smtquery.smtcon.exprfun.stateApprox],p)
+        super().__init__('hasApproxStates', '0.0.1',[smtquery.smtcon.exprfun.ApproxOfStates],p)
 
     def __call__(self, smtfile,maxApproxStates=500):
         if 0 < self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])] <= maxApproxStates:
@@ -135,7 +135,7 @@ class HasApproxStates(Predicate):
            
 class HasMinDFAStates(Predicate):
     def __init__(self,p):
-        super().__init__('hasMinDFAStates', '0.0.1',[smtquery.smtcon.exprfun.minDFA],p)
+        super().__init__('hasMinDFAStates', '0.0.1',[smtquery.smtcon.exprfun.statesOfMinDFA],p)
 
     def __call__(self, smtfile,maxStates=500):
         if 0 < self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])] <= maxStates:
@@ -155,7 +155,7 @@ class HasRecDepth(Predicate):
 
 class HasNumITE(Predicate):
     def __init__(self,p):
-        super().__init__('hasNumITE', '0.0.1',[smtquery.smtcon.exprfun.numITE],p)
+        super().__init__('hasNumITE', '0.0.1',[smtquery.smtcon.exprfun.countITE],p)
 
     def __call__(self, smtfile,numITE=500):
         if 0 < self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])] <= numITE:
@@ -209,7 +209,7 @@ class HasScopeCoincidence(Predicate):
         super().__init__('hasScopeCoincidence', '0.0.1',[smtquery.smtcon.exprfun.WEQProperties],p)
 
     def __call__(self, smtfile,scope=7):
-    	prop = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        prop = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
         if 0 < prop["scopeCoincidence"] <= scope:
             return smtquery.qlang.predicates.Trool.TT
         else:

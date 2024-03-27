@@ -114,7 +114,7 @@ class Probes:
             "hasMaxWEQVars" : smtquery.predicates.predicates.HasWEQVars(p),
             "hasMaxWEQLenVars" : smtquery.predicates.predicates.HasWEQLenVars(p),
             "hasMaxLenVars" : smtquery.predicates.predicates.HasLenVars(p),
-            "hasMaxScopeCoincidence" : smtquery.predicates.predicates.HaScopeCoincidence(p)
+            "hasMaxScopeCoincidence" : smtquery.predicates.predicates.HasScopeCoincidence(p)
         }
 
     @staticmethod
