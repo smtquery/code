@@ -55,6 +55,7 @@ class HasHOL(Predicate):
 
 def _onlyKindHelper(kind,smtfile,p,intels):
     if kind in p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])] and len(set(p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])].keys()).difference(set({Kind.CONSTANT,Kind.VARIABLE,Kind.OTHER}))) == 1:
+        print(p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])])
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF  
@@ -71,22 +72,21 @@ class OnlyLinears(Predicate):
         super().__init__('OnlyLinears', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
 
     def __call__(self, smtfile):
-        return _kindHelper(Kind.LENGTH_CONSTRAINT,smtfile,self._probes,self._intels)
+        return _onlyKindHelper(Kind.LENGTH_CONSTRAINT,smtfile,self._probes,self._intels)
 
 class OnlyRegex(Predicate):
     def __init__(self,p):
         super().__init__('OnlyRegex', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
 
     def __call__(self, smtfile):
-        return _kindHelper(Kind.REGEX_CONSTRAINT,smtfile,self._probes,self._intels)
+        return _onlyKindHelper(Kind.REGEX_CONSTRAINT,smtfile,self._probes,self._intels)
 
 class OnlyHOL(Predicate):
     def __init__(self,p):
         super().__init__('OnlyHOL', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
 
     def __call__(self, smtfile):
-        return _kindHelper(Kind.HOL_FUNCTION,smtfile,self._probes,self._intels)
-
+        return _onlyKindHelper(Kind.HOL_FUNCTION,smtfile,self._probes,self._intels)
 
 class HasAtLeastCountVariables(Predicate):
     def __init__(self,p):
