@@ -105,7 +105,6 @@ class Probes:
             "isSimpleRegex" : smtquery.predicates.predicates.IsSimpleRegex(p), 
             "hasConcatenationRegex" : smtquery.predicates.predicates.HasConcatenationRegex(p), 
             "hasMaxRegexDepthOf50" : smtquery.predicates.predicates.HasRegexDepth(p),
-            "purelyPositive" : smtquery.predicates.predicates.purelyPositive(p),
             "hasMaxApproxStates"  : smtquery.predicates.predicates.HasApproxStates(p),
             "hasMaxDFAStates" : smtquery.predicates.predicates.HasMinDFAStates(p),
             "hasMaxRecDepth" : smtquery.predicates.predicates.HasRecDepth(p),
@@ -114,7 +113,13 @@ class Probes:
             "hasMaxWEQVars" : smtquery.predicates.predicates.HasWEQVars(p),
             "hasMaxWEQLenVars" : smtquery.predicates.predicates.HasWEQLenVars(p),
             "hasMaxLenVars" : smtquery.predicates.predicates.HasLenVars(p),
-            "hasMaxScopeCoincidence" : smtquery.predicates.predicates.HasScopeCoincidence(p)
+            "hasMaxScopeCoincidence" : smtquery.predicates.predicates.HasScopeCoincidence(p),
+            "purelyPositive" : smtquery.predicates.predicates.purelyPositive(p),
+            "isSingleCube" : smtquery.predicates.predicates.IsSingleCube(p),
+            "isStraightLine" : smtquery.predicates.predicates.IsStraightLine(p),
+            "hasTransductions" : smtquery.predicates.predicates.HasTransductions(p),     
+            "isImplicitlyUniversal" : smtquery.predicates.predicates.implicitlyUniversal(p),  
+            "hasStringNumberConstraints" : smtquery.predicates.predicates.HasStringNumberConstraints(p), 
         }
 
     @staticmethod

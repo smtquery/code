@@ -1082,3 +1082,41 @@ class isNegated(ExprFun):
 
     def neutral(self):
         return False
+    
+class HasJunctors(ExprFun):
+    def __init__(self):
+        super().__init__ ("HasJunctors","0.0.1")
+        
+    def apply (self, expr, data):
+        if expr.sort() != Sort.Bool or expr.kind() != Kind.OTHER:
+            return data
+        data.add(expr.decl())
+        return data
+
+    def merge(self, expr, data):
+        d_new = set()
+        for d in data:
+            d_new.update(d)
+        return d_new
+    
+    def neutral(self):
+        return set()
+    
+class HasHOLConstraints(ExprFun):
+    def __init__(self):
+        super().__init__ ("HasHOLConstraints","0.0.1")
+        
+    def apply (self, expr, data):
+        if expr.kind() != Kind.HOL_FUNCTION:
+            return data
+        data.add(expr.decl())
+        return data
+
+    def merge(self, expr, data):
+        d_new = set()
+        for d in data:
+            d_new.update(d)
+        return d_new
+    
+    def neutral(self):
+        return set()

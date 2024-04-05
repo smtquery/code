@@ -228,3 +228,63 @@ class purelyPositive(Predicate):
                 return smtquery.qlang.predicates.Trool.FF
             nodes+=n.children()
         return smtquery.qlang.predicates.Trool.TT
+
+# Formulas that are single cubes (only conjunctions and negation) vs. not
+class IsSingleCube(Predicate):
+    def __init__(self,p):
+        super().__init__('IsSingleCube', '0.0.1',[smtquery.smtcon.exprfun.HasJunctors],p)
+
+    def __call__(self,smtfile):
+        jun = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        if set(str(j) for j in jun).issubset(set({'and','not'})):
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF
+
+# Straight-Line Fragment of WEQ+REG
+class IsStraightLine(Predicate):
+    def __init__(self,p):
+        super().__init__('IsStraightLine', '0.0.1',[smtquery.smtcon.exprfun.HasJunctors,smtquery.smtcon.exprfun.SourceVariables],p)
+
+    def __call__(self,smtfile):
+        jun = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        sl = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[1])]
+        if set(str(j) for j in jun).issubset(set({'and'})) and sl["SL"]:
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF
+
+# Have transduction (replace, replace_*)
+class HasTransductions(Predicate):
+    def __init__(self,p):
+        super().__init__('HasTransductions', '0.0.1',[smtquery.smtcon.exprfun.HasHOLConstraints],p)
+
+    def __call__(self,smtfile):
+        hol_c = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        if len(set(str(c) for c in hol_c if str(c) in set({'str.replace','str.replace_all','str.replace_re','str.replace_re_all'}))) > 0:
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF
+
+# implicitly univeral quantified formulae, e.g. negated contains, negated prefixof, negated suffixof, str.indexof, negated replace/replace_*
+class implicitlyUniversal(Predicate):
+    def __init__(self,p):
+        super().__init__('implicitlyUniversal', '0.0.1',[smtquery.smtcon.exprfun.isNegated],p)
+        self._constraints = {'str.contains' : True, 'str.indexof' : False, 'str.replace' : True,  'str.replace_all' : True, 'str.replace_re' : True, 'str.replace_re_all' : True, 'str.suffixof' : True, 'str.prefixof' : True}
+
+    def __call__(self,smtfile):
+        nodes = self._probes.getIntel(smtfile,self._intels).nodes
+        
+        while len(nodes) > 0:
+            n = nodes.pop()
+            if str(n.decl()) in self._constraints and self._constraints[str(n.decl())] == n.get_intel()[self._probes.getIntelKey2Class(self._intels[0])]:
+                return smtquery.qlang.predicates.Trool.TT
+            nodes+=n.children()
+        return smtquery.qlang.predicates.Trool.FF
+    
+class HasStringNumberConstraints(Predicate):
+    def __init__(self,p):
+        super().__init__('HasStringNumberConstraints', '0.0.1',[smtquery.smtcon.exprfun.HasHOLConstraints],p)
+
+    def __call__(self,smtfile):
+        hol_c = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        if len(set(str(c) for c in hol_c if str(c) in set({'str.from_code','str.to_code','str.to_int','str.from_int'}))) > 0:
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF
