@@ -55,7 +55,6 @@ class HasHOL(Predicate):
 
 def _onlyKindHelper(kind,smtfile,p,intels):
     if kind in p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])] and len(set(p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])].keys()).difference(set({Kind.CONSTANT,Kind.VARIABLE,Kind.OTHER}))) == 1:
-        print(p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])])
         return smtquery.qlang.predicates.Trool.TT
     else:
         return smtquery.qlang.predicates.Trool.FF  
