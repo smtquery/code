@@ -28,8 +28,11 @@ def hasValidModel (smtfile,solvername):
         return Trool.FF
 
 def isCorrectResult (smtfile,solvername):
-    if smtquery.config.getConfiguration().getStorage ().getResultForSolver(smtfile,solvername)["verified"] in [smtquery.solvers.solver.Verified.VerifiedSAT, smtquery.solvers.solver.Verified.Majority]:
+    res = smtquery.config.getConfiguration().getStorage ().getResultForSolver(smtfile,solvername)["verified"]
+    if res in [smtquery.solvers.solver.Verified.VerifiedSAT, smtquery.solvers.solver.Verified.Majority]:
         return Trool.TT
+    elif res in [smtquery.solvers.solver.Verified.Unverified]:
+        return Trool.Maybe
     else:
         return Trool.FF
 
