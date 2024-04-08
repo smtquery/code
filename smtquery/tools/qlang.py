@@ -28,6 +28,9 @@ def run (arguments):
         predicates[f"isUNSAT({name})"] = smtquery.qlang.predicates.makeUnSatPredicate (name)
 
     for name in smtquery.config.getConfiguration().getSolvers ().keys():
+        predicates[f"isUNKNOWN({name})"] = smtquery.qlang.predicates.makeUnknownPredicate (name)
+
+    for name in smtquery.config.getConfiguration().getSolvers ().keys():
         predicates[f"hasValidModel({name})"] = smtquery.qlang.predicates.makeValidModelPredicate (name)
 
     for name in smtquery.config.getConfiguration().getSolvers ().keys():

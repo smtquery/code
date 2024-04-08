@@ -20,6 +20,12 @@ def isUnSat (smtfile,solvername):
         return Trool.TT
     else:
         return Trool.FF
+    
+def isUnknown (smtfile,solvername):
+    if smtquery.config.getConfiguration().getStorage ().getResultForSolver(smtfile,solvername)["result"] == smtquery.solvers.solver.Result.Unknown:
+        return Trool.TT
+    else:
+        return Trool.FF
 
 def hasValidModel (smtfile,solvername):
     if smtquery.config.getConfiguration().getStorage ().getResultForSolver(smtfile,solvername)["verified"] == smtquery.solvers.solver.Verified.VerifiedSAT:
@@ -55,6 +61,11 @@ def makeSatPredicate (solvername):
 def makeUnSatPredicate (solvername):
     def predicate (smtfile):
         return isUnSat (smtfile,solvername)
+    return predicate
+
+def makeUnknownPredicate (solvername):
+    def predicate (smtfile):
+        return isUnknown (smtfile,solvername)
     return predicate
 
 def makeValidModelPredicate (solvername):
