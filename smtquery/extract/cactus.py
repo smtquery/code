@@ -1,5 +1,6 @@
 import smtquery.ui
 from smtquery.solvers.solver import *
+import time
 
 class CactusPlot:
     output_folder = "./output/cactus/"
@@ -58,6 +59,7 @@ class CactusPlot:
         ax = fig.subplots()
         fontP = FontProperties()
         fontP.set_size('small')
+        lgd = None
 
         colours = dict()
         for s in cactus_data.keys():
@@ -79,7 +81,9 @@ class CactusPlot:
             buf = BytesIO()
 
         os.makedirs(file_path,exist_ok = True)
-        fig.savefig(f"{file_path}/cactus.pdf",format="pdf",dpi=320,bbox_extra_artists=(lgd,), bbox_inches='tight')
+        if lgd == None:
+            return
+        fig.savefig(f"{file_path}/cactus_{int(time.time())}.pdf",format="pdf",dpi=320,bbox_extra_artists=(lgd,), bbox_inches='tight')
 
     ## aux
     def _colourGen(self):
