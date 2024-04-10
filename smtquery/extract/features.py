@@ -3,6 +3,8 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
+import smtquery.smtcon
+import smtquery.smtcon.exprfun
 import smtquery.ui
 from smtquery.intel.plugins import probes
 from smtquery.intel.plugins.probes import Probes
@@ -116,21 +118,20 @@ class Features:
         f.close()
 
     def __call__(self, smtfile):
-        ast = Probes().getIntel(smtfile)
+        intels = [smtquery.smtcon.exprfun.numSymbols,      #0
+                  smtquery.smtcon.exprfun.countITE,        #1
+                  smtquery.smtcon.exprfun.maxNesting,      #2
+                  smtquery.smtcon.exprfun.WEQProperties,   #3
+                  smtquery.smtcon.exprfun.WeqVars,         #4
+                  smtquery.smtcon.exprfun.LenConVars,      #5
+                  smtquery.smtcon.exprfun.maxRecDepth,     #6
+                  smtquery.smtcon.exprfun.WeqVars,         #7
+                  smtquery.smtcon.exprfun.ApproxOfStates,  #8
+                  smtquery.smtcon.exprfun.HasAtom]         #9
+        p = Probes()
+        ast = p.getIntel(smtfile,intels)
+        intel = ast.get_intel()
 
-        Probes().addIntel(smtfile, ast, exprfun.numSymbols(), dict(), "numSymbols")
-        Probes().addIntel(smtfile, ast, exprfun.countITE(), dict(), "numITE")
-        Probes().addIntel(smtfile, ast, exprfun.maxNesting(), dict(), "maxNesting")
-        Probes().addIntel(smtfile, ast, exprfun.WEQProperties(), dict(), "WEQProperties")
-        Probes().addIntel(smtfile, ast, exprfun.WeqVars(), dict(), "WeqVars")
-        Probes().addIntel(smtfile, ast, exprfun.LenConVars(), dict(), "LenConVars")
-        Probes().addIntel(smtfile, ast, exprfun.maxRecDepth(), dict(), "maxRecDepth")
-        Probes().addIntel(smtfile, ast, exprfun.WeqLenVars(), dict(), "WeqLenVars")
-        Probes().addIntel(smtfile, ast, exprfun.ApproxOfStates(), dict(), "stateApprox")
-
-
-
-        intel = ast.intel
         numStringVars = 0
         vars = intel["variables"]
         allVars = 1
@@ -163,24 +164,24 @@ class Features:
         maxRecDepth = 0
 
 
-        if Kind.WEQ in intel["has"]:
-            numWEQ = intel["has"][Kind.WEQ]
-        if Kind.LENGTH_CONSTRAINT in intel["has"]:
-            numLenCon = intel["has"][Kind.LENGTH_CONSTRAINT]
-        if Kind.REGEX_CONSTRAINT in intel["has"]:
-            numReg = intel["has"][Kind.REGEX_CONSTRAINT]
-        if "stateApprox" in intel:
-            nfaStates = intel["stateApprox"]
+        if Kind.WEQ in intel[p.getIntelKey2Class(intels[9])]:
+            numWEQ = intel[p.getIntelKey2Class(intels[9])][Kind.WEQ]
+        if Kind.LENGTH_CONSTRAINT in intel[p.getIntelKey2Class(intels[9])]:
+            numLenCon = intel[p.getIntelKey2Class(intels[9])][Kind.LENGTH_CONSTRAINT]
+        if Kind.REGEX_CONSTRAINT in intel[p.getIntelKey2Class(intels[9])]:
+            numReg = intel[p.getIntelKey2Class(intels[9])][Kind.REGEX_CONSTRAINT]
+        if p.getIntelKey2Class(intels[8]) in intel:
+            nfaStates = intel[p.getIntelKey2Class(intels[8])]
 
-        if "numSymbols" in intel:
-            numRegSymbols = len(intel["numSymbols"])
+        if p.getIntelKey2Class(intels[0]) in intel:
+            numRegSymbols = len(intel[p.getIntelKey2Class(intels[0])])
 
-        if "maxNesting" in intel:
-            maxNesting = intel["maxNesting"]
-        if "numITE" in intel:
-            numITE = intel["numITE"]
-        if "WEQProperties" in intel:
-            prop = intel["WEQProperties"]
+        if p.getIntelKey2Class(intels[2]) in intel:
+            maxNesting = intel[p.getIntelKey2Class(intels[2])]
+        if p.getIntelKey2Class(intels[1]) in intel:
+            numITE = intel[p.getIntelKey2Class(intels[1])]
+        if p.getIntelKey2Class(intels[3]) in intel:
+            prop = intel[p.getIntelKey2Class(intels[3])]
             numQWEQ = prop["numQWEQ"]
             maxNumQVar = prop["maxNumOfQVar"]
             scopeCoincidence = prop["scopeCoincidence"]
@@ -192,14 +193,14 @@ class Features:
                 smallestRatioLR = 0
             if str(smallestRatioVarCon) == "inf":
                 smallestRatioVarCon = 0
-        if "maxRecDepth" in intel:
-            maxRecDepth = intel["maxRecDepth"]
-        if "LenConVars" in intel:
-            LenConVars = len(max(intel["LenConVars"], key=len, default=set()))
-        if "WeqVars" in intel:
-            WEQVars = len(max(intel["WeqVars"], key=len, default=set()))
-        if "WeqLenVars" in intel:
-            WeqLenVars = len(max(intel["WeqLenVars"], key=len, default=set()))
+        if p.getIntelKey2Class(intels[6]) in intel:
+            maxRecDepth = intel[p.getIntelKey2Class(intels[6])]
+        if p.getIntelKey2Class(intels[5]) in intel:
+            LenConVars = len(max(intel[p.getIntelKey2Class(intels[5])], key=len, default=set()))
+        if p.getIntelKey2Class(intels[4]) in intel:
+            WEQVars = len(max(intel[p.getIntelKey2Class(intels[4])], key=len, default=set()))
+        if p.getIntelKey2Class(intels[5]) in intel:
+            WeqLenVars = len(max(intel[p.getIntelKey2Class(intels[5])], key=len, default=set()))
         numAsserts = len(ast)
         name = smtfile.getName()
         solverindex = 0
