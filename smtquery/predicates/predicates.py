@@ -100,21 +100,7 @@ class OnlyFactorRelation(Predicate):
 
     def __call__(self, smtfile):
         return _onlyKindHelper(Kind.FACTOR,smtfile,self._probes,self._intels)
-
-class OnlyWEQExpr(Predicate):
-    def __init__(self,p):
-        super().__init__('OnlyFactorRelation', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
-
-    def __call__(self,smtfile):
-        if (set(self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]).difference(set({Kind.CONSTANT,Kind.VARIABLE,Kind.OTHER}))).issubset(set({Kind.FACTOR,Kind.WEQ})):
-            return smtquery.qlang.predicates.Trool.TT
-        else:
-            return smtquery.qlang.predicates.Trool.FF  
-
-
-
-        return _onlyKindHelper(Kind.FACTOR,smtfile,self._probes,self._intels) 
-
+    
 class HasAtLeastCountVariables(Predicate):
     def __init__(self,p):
         super().__init__('hasAtLeastCountVariables', '0.0.1',[smtquery.smtcon.exprfun.VariableCount],p)
