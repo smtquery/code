@@ -76,7 +76,10 @@ class Z3SMTtoSExpr(SMTtoSExpr):
         return str(op.sexpr()).split(" ")[1]
 
     # HOL functions
-    hofunc = ["At","str.substr","PrefixOf","SuffixOf","Contains","IndexOf","Replace","IntToStr","StrToInt"]
+    hofunc = ["At","str.substr","IndexOf","Replace","IntToStr","StrToInt"]
+    # WEQ representable HOLs
+    factors = ["PrefixOf","SuffixOf","Contains"]
+    
     def _determineKind(self,expr,is_variable,is_const):
         if is_variable:
             return Kind.VARIABLE
@@ -86,6 +89,8 @@ class Z3SMTtoSExpr(SMTtoSExpr):
         children = expr.children()
         if str(expr.decl()) in self.hofunc:
             return Kind.HOL_FUNCTION
+        elif str(expr.decl()) in self.factors:
+            return Kind.FACTOR
         elif str(expr.decl()) == "InRe":
             return Kind.REGEX_CONSTRAINT
         elif type(expr) == z3.z3.BoolRef and len(children) == 2 and str(children[0].sort()) == "String" and children[0].sort() == children[1].sort():

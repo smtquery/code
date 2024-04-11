@@ -46,7 +46,7 @@ class Features:
     def trainAndTestDTC(self, dtc, data, Y, crit, depth, feat, split):
         y = Y.values.ravel()
         X = data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)      ###
         dtc.criterion = crit
         dtc.max_depth = depth
         dtc.max_features = feat
@@ -68,6 +68,7 @@ class Features:
                      
                      class_names=class_names
                        )
+        print("SHIT")
         return viz
 
 
@@ -78,6 +79,8 @@ class Features:
         max_d = 10
         max_f = None
         splitter = 'best'
+
+        ## this is shit!
         Y = data.iloc[:, 21]
         data = data.iloc[:, :21]
         dtc = DecisionTreeClassifier()
@@ -217,6 +220,7 @@ class Features:
         s_row = [numStringVars, varRatio, numWEQ, numQWEQ, maxNumQVar, scopeCoincidence, largestRatioVarCon,
                  smallestRatioVarCon, largestRatioLR, smallestRatioLR, numReg, numRegSymbols, maxNesting, nfaStates, numLenCon,
                  numAsserts, maxRecDepth, LenConVars, WEQVars, WeqLenVars, numITE, solverindex, name]
+
         return s_row
 
 

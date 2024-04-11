@@ -52,6 +52,13 @@ class HasHOL(Predicate):
 
     def __call__(self, smtfile):
         return _kindHelper(Kind.HOL_FUNCTION,smtfile,self._probes,self._intels)
+    
+class HasFactorRelation(Predicate):
+    def __init__(self,p):
+        super().__init__('HasFactorRelation', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self, smtfile):
+        return _kindHelper(Kind.FACTOR,smtfile,self._probes,self._intels)
 
 def _onlyKindHelper(kind,smtfile,p,intels):
     if kind in p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])] and len(set(p.getIntel(smtfile,intels).get_intel()[p.getIntelKey2Class(intels[0])].keys()).difference(set({Kind.CONSTANT,Kind.VARIABLE,Kind.OTHER}))) == 1:
@@ -86,6 +93,13 @@ class OnlyHOL(Predicate):
 
     def __call__(self, smtfile):
         return _onlyKindHelper(Kind.HOL_FUNCTION,smtfile,self._probes,self._intels)
+
+class OnlyFactorRelation(Predicate):
+    def __init__(self,p):
+        super().__init__('OnlyFactorRelation', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self,smtfile):
+        return _onlyKindHelper(Kind.FACTOR,smtfile,self._probes,self._intels) 
 
 class HasAtLeastCountVariables(Predicate):
     def __init__(self,p):

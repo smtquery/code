@@ -14,6 +14,7 @@ class Kind(Enum):
     LENGTH_CONSTRAINT = 5
     HOL_FUNCTION = 6
     OTHER = 7
+    FACTOR = 8
 
 def _condCopy(c):
     try:
