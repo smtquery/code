@@ -46,12 +46,14 @@ class Features:
     def trainAndTestDTC(self, dtc, data, Y, crit, depth, feat, split):
         y = Y.values.ravel()
         X = data
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)      ###
+        dtc.feature_names = X.columns
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=0)
         dtc.criterion = crit
         dtc.max_depth = depth
         dtc.max_features = feat
         dtc.splitter = split
-        dtc.fit(X_train, y_train)
+
+        dtc.fit(X_train.values, y_train)
         #in case some solver could not solve anything; the class names must be extracted so the right ones will be displayed
         sorted_list = Y.sort_values().drop_duplicates().tolist()
         class_names = []
@@ -60,15 +62,10 @@ class Features:
                 class_names.append(s)
 
         viz = dtreeviz(dtc, X_train, y_train,
-                      target_name="target",
-                      feature_names=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
-                     "largesRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
-                     "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
-                     "maxRecDepth", "LenConVars", "WEQVars", "WeqLenVars", "numITE"],
-                     
-                     class_names=class_names
-                       )
-        print("SHIT")
+                    target_name="target",
+                    feature_names=dtc.feature_names,
+                    class_names=class_names
+                    )
         return viz
 
 
