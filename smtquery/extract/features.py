@@ -68,8 +68,6 @@ class Features:
                     )
         return viz
 
-
-
     def buildTree(self, data):
         # Parameter for Decision Tree
         criterion = 'gini'
