@@ -106,6 +106,7 @@ class Probes:
             "onlyRegex" : smtquery.predicates.predicates.OnlyRegex(p),
             "onlyHOL" : smtquery.predicates.predicates.OnlyHOL(p),
             "onlyFactorRelation" : smtquery.predicates.predicates.OnlyFactorRelation(p),
+            "onlyExprWEQ" : smtquery.predicates.predicates.OnlyWEQExpr(p),
             "hasAtLeast5StringVariables" : smtquery.predicates.predicates.HasAtLeastCountVariables(p),
             "isQuadratic" : smtquery.predicates.predicates.IsQuadratic(p),
             "isSimpleRegex" : smtquery.predicates.predicates.IsSimpleRegex(p), 
