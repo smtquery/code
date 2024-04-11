@@ -1120,3 +1120,22 @@ class HasHOLConstraints(ExprFun):
     
     def neutral(self):
         return set()
+    
+class HasFactorConstraints(ExprFun):
+    def __init__(self):
+        super().__init__ ("HasFactorConstraints","0.0.1")
+        
+    def apply (self, expr, data):
+        if expr.kind() != Kind.FACTOR:
+            return data
+        data.add(expr.decl())
+        return data
+
+    def merge(self, expr, data):
+        d_new = set()
+        for d in data:
+            d_new.update(d)
+        return d_new
+    
+    def neutral(self):
+        return set()
