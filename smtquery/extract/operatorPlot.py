@@ -13,14 +13,22 @@ class OperatorPlot:
     def getName ():
         return "OperatorPlot"
 
-    def finalise(self,results,total,count_opertors=False):
+    def finalise(self,results,total,count_opertors=False,split_ops=True):
         res = [r for r in results if r != None]
         totalCount = len(res)
         if count_opertors:
             ops = self._merge_dicts(res)
         else:
             ops = self._acc_dicts(res)
-        self._plot_operations(ops)
+        
+        if split_ops:
+            s_ops = self._prefix_split_ops(ops)
+        else:
+            s_ops = {"all" : ops}
+        
+        for p in s_ops.keys():
+            self._plot_operations(s_ops[p],p)
+
         with smtquery.ui.output.makePlainMessager () as mess:
             mess.message (f"Total matching instances: {totalCount} of {total} within the selected set ({(100/total)*totalCount}%).\n")
         
@@ -46,7 +54,7 @@ class OperatorPlot:
                     d_new[k]+=1
         return d_new
 
-    def _plot_operations(self,ops):
+    def _plot_operations(self,ops,prefix):
         # Convert the dictionary into a DataFrame
         df = pd.DataFrame(list(ops.items()), columns=['Operation', 'Occurrences'])
         df = df.sort_values(by='Occurrences', ascending=False)
@@ -65,7 +73,7 @@ class OperatorPlot:
         # Show the plot
         plt.tight_layout()  # Adjust layout to make room for the rotated x-axis labels
         os.makedirs(self.output_folder,exist_ok = True)
-        plt.savefig(f"{self.output_folder}/operatorPlot_{int(time.time())}.pdf",format="pdf",dpi=320)
+        plt.savefig(f"{self.output_folder}/operatorPlot_{prefix}_{int(time.time())}.pdf",format="pdf",dpi=320)
 
     def _neutral_ops(self):
         return {
@@ -100,6 +108,15 @@ class OperatorPlot:
             're.comp': 0,        # Complement of a regular expression
             're.diff': 0,        # Difference of regular expressions
         }
+    
+    def _prefix_split_ops(self,ops):
+        s_ops = dict()
+        for op in ops.keys():
+            prefix = op.split(".")[0]
+            if prefix not in s_ops:
+                s_ops[prefix] = dict()
+            s_ops[prefix][op] = ops[op]
+        return s_ops
 
 def PullExtractor():
     return [OperatorPlot]
