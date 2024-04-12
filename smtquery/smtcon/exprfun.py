@@ -1139,3 +1139,44 @@ class HasFactorConstraints(ExprFun):
     
     def neutral(self):
         return set()
+    
+class CountOperators(ExprFun):
+    def __init__(self):
+        super().__init__ ("CountOperators","0.0.1")
+        
+    def apply (self, expr, data): 
+        if expr.kind() in [Kind.CONSTANT,Kind.VARIABLE]:
+            return data
+        
+        name = f"{expr.decl()}"
+
+        if name not in data:
+            data[name] = 0
+        data[name]+=1
+        return data
+    
+    def _sort_of_children(self,expr):
+        return "".join([f"{c.sort()}, " for c in expr.children()])
+
+
+    def merge(self, expr, data):
+        d_new = dict()
+        for d in data:
+            for k in set(d_new.keys()).union(set(d.keys())):
+                if k in d_new and k in d:
+                    d_new[k]+=d[k]
+                elif k in d:
+                    d_new[k] = d[k]
+        return d_new
+    
+    def neutral(self):
+        return dict()
+
+    
+###
+# Select Cactus From *
+# Select Cactus From * Where (((isSAT(CVC5) and isVerified(CVC5)) or (isSAT(Z3Str3) and isVerified(Z3Str3))) or (isSAT(Z3Seq) and isVerified(Z3Seq)))
+# Select Cactus From * Where ((isUNSAT(CVC5) or isUNSAT(Z3Str3)) or isUNSAT(Z3Seq))
+###
+# Intel: zähle vorkommen von operationen in dict {"str.++" : 10, "re.in" : 0} = file  --> Graph zur distribution von operationen und anzahl der instanzen, die operationen verwenden erstellen (im overleaf)
+# 
