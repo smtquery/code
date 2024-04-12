@@ -1145,7 +1145,7 @@ class CountOperators(ExprFun):
         super().__init__ ("CountOperators","0.0.1")
         
     def apply (self, expr, data): 
-        if expr.kind() in [Kind.CONSTANT,Kind.VARIABLE]:
+        if expr.kind() in [Kind.VARIABLE]:
             return data
         
         name = f"{expr.decl()}"
