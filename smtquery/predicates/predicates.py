@@ -336,3 +336,43 @@ class HasStringNumberConstraints(Predicate):
         if len(set(str(c) for c in hol_c if str(c) in set({'str.from_code','str.to_code','str.to_int','str.from_int'}))) > 0:
             return smtquery.qlang.predicates.Trool.TT
         return smtquery.qlang.predicates.Trool.FF
+    
+class HasLexConstraints(Predicate):
+    def __init__(self,p):
+        super().__init__('HasLexConstraints', '0.0.1',[smtquery.smtcon.exprfun.HasHOLConstraints],p)
+
+    def __call__(self,smtfile):
+        hol_c = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        if len(set(str(c) for c in hol_c if str(c) in set({'str.>=','str.>','str.<=','str.<'}))) > 0:
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF
+
+class HasIndexOf(Predicate):
+    def __init__(self,p):
+        super().__init__('HasIndexOf', '0.0.1',[smtquery.smtcon.exprfun.HasHOLConstraints],p)
+
+    def __call__(self,smtfile):
+        hol_c = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        if len(set(str(c) for c in hol_c if str(c) in set({'str.indexof'}))) > 0:
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF
+    
+class HasSubstring(Predicate):
+    def __init__(self,p):
+        super().__init__('HasSubstring', '0.0.1',[smtquery.smtcon.exprfun.HasHOLConstraints],p)
+
+    def __call__(self,smtfile):
+        hol_c = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        if len(set(str(c) for c in hol_c if str(c) in set({'str.substr'}))) > 0:
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF
+    
+class HasStringAt(Predicate):
+    def __init__(self,p):
+        super().__init__('HasStringAt', '0.0.1',[smtquery.smtcon.exprfun.HasHOLConstraints],p)
+
+    def __call__(self,smtfile):
+        hol_c = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        if len(set(str(c) for c in hol_c if str(c) in set({'str.at'}))) > 0:
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF

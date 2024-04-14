@@ -151,6 +151,7 @@ class CactusPlot:
         latex_str += self._genTIKZBody (cactus_data,colours)
         latex_str += self.genLatexDocumentFoot()
 
+        os.makedirs(file_path,exist_ok = True)
         with open(f"{file_path}/cactus_{int(time.time())}.tex", "w") as text_file:
             text_file.write(latex_str)
 

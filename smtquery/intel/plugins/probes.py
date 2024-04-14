@@ -126,6 +126,10 @@ class Probes:
             "hasTransductions" : smtquery.predicates.predicates.HasTransductions(p),     
             "isImplicitlyUniversal" : smtquery.predicates.predicates.implicitlyUniversal(p),  
             "hasStringNumberConstraints" : smtquery.predicates.predicates.HasStringNumberConstraints(p), 
+            "hasLexConstraints" : smtquery.predicates.predicates.HasLexConstraints(p), 
+            "hasIndexOf" : smtquery.predicates.predicates.HasIndexOf(p), 
+            "hasSubstring" : smtquery.predicates.predicates.HasSubstring(p), 
+            "hasStringAt" : smtquery.predicates.predicates.HasStringAt(p), 
         }
 
     @staticmethod
