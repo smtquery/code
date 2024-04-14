@@ -108,7 +108,7 @@ class CactusPlot:
                 output = ('\n\\addplot[name path=path'+str(s.replace('_','').replace('.',''))+' , colour'+str(s.replace('_','').replace('.',''))+', line width=1.5pt, solid] coordinates {')
 
                 for (x,y) in data:
-                    output+="("+str(x)+","+str(y/1000)+")"
+                    output+="("+str(x)+","+str(y)+")"
                 output+= '};\n'
 
                 # collect data to fill between curve and x axis; needs to be placed in the end 
@@ -209,6 +209,7 @@ class CactusPlot:
                     break
                 j+=1
             ll.append((total_points,l[total_points-1]["y"]))
+
         return ll
 
 
