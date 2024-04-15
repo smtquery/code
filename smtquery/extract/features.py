@@ -38,7 +38,9 @@ class Features:
                 
                 report += f" Average for {s}: {mean}"
             report += "\n"
-            notSolved = len(dataframe.index) - len(dataframe.dropna().index)
+        notSolved = len(dataframe.index) - len(dataframe[dataframe['solver'] != -1].index)
+        report += f"Number of Not solved instances: {notSolved}"
+        report += "\n"
         return report
 
 
@@ -47,7 +49,7 @@ class Features:
         y = Y.values.ravel()
         X = data
         dtc.feature_names = X.columns
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=0)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         dtc.criterion = crit
         dtc.max_depth = depth
         dtc.max_features = feat
@@ -75,9 +77,8 @@ class Features:
         max_f = None
         splitter = 'best'
 
-        ## this is shit!
-        Y = data.iloc[:, 21]
-        data = data.iloc[:, :21]
+        Y = data["solver"]
+        data = data.drop(['solver', 'path'], axis=1)
         dtc = DecisionTreeClassifier()
         return self.trainAndTestDTC(dtc, data, Y, criterion, max_d, max_f, splitter)
 
@@ -105,12 +106,11 @@ class Features:
         path = os.path.join (self.getOutputFolder (),dataframe["path"][0].split(":")[0])
         os.makedirs(path, exist_ok=True)
         dataframe.to_csv(os.path.join (path,"features.csv"), index=False)
-
-        df = dataframe
-        viz = self.buildTree(df.dropna())
+        report = self.create_report(dataframe, dataframe["path"][0].split(":")[0])
+        viz = self.buildTree(dataframe[dataframe['solver'] != -1])
         viz.save(os.path.join (path,"decisionTree.svg"))
 
-        report = self.create_report(dataframe, dataframe["path"][0].split(":")[0])
+        
         with open(f"{path}/report.txt", 'w') as f:
             f.write(report)
         f.close()
@@ -201,7 +201,7 @@ class Features:
             WeqLenVars = len(max(intel[p.getIntelKey2Class(intels[5])], key=len, default=set()))
         numAsserts = len(ast)
         name = smtfile.getName()
-        solverindex = 0
+        solverindex = -1
         solvertime = 1000
         _storage = smtquery.config.getConfiguration().getStorage()
         res = _storage.getResultsForInstance(smtfile)
