@@ -18,6 +18,7 @@ import graphviz
 from sklearn import tree
 from dtreeviz.trees import dtreeviz
 import smtquery.config
+import numpy as np
 
 
 class allFeatures:
@@ -110,6 +111,7 @@ class allFeatures:
 
     def trainAndTestRF(self, rf, X, Y):
         y = Y.values.ravel()
+        y = np.array(y, dtype=int)
         rf.feature_names = X.columns
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
         rf.fit(X_train, y_train)
@@ -134,6 +136,7 @@ class allFeatures:
         columns_to_drop = data1.columns[solver_index:]
         # Parameter for Decision Tree
         X = data1.drop(columns=columns_to_drop)
+
         y = data1['solver']
         rf = RandomForestClassifier(n_estimators=200, max_depth=None, max_features='sqrt', min_samples_leaf=1, min_samples_split=2, bootstrap=True, class_weight='balanced', criterion='entropy')
         self.trainAndTestRF(rf, X, y)
@@ -168,7 +171,7 @@ class allFeatures:
         reportDF = dataframe.iloc[:, :path_index + 1]
         path = os.path.join(self.getOutputFolder(), "allFeatures")
         os.makedirs(path, exist_ok=True)
-        reportDF.to_csv(os.path.join(path, "features.csv"), index=False)
+        dataframe.to_csv(os.path.join(path, "features.csv"), index=False)
         report = self.create_report(reportDF, reportDF["path"][0].split(":")[0])
         with open(f"{path}/report.txt", 'w') as f:
             f.write(report)
