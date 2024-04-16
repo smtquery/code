@@ -18,12 +18,76 @@ import graphviz
 from sklearn import tree
 from dtreeviz.trees import dtreeviz
 import smtquery.config
+import numpy as np
 
 class Features:
     def __init__(self):
         self._solvers = None
         self._output_folder = None
-        
+
+    def preprocess(self, data):
+        columns_to_check = ['numStringVar', 'varRatio', 'numWEQ', 'numQWEQ', 'maxNumOfQVar', 'scopeIncidence',
+                            'largestRatioVarCon', 'smallestRatioVarCon', 'largestRatioLR', 'smallestRatioLR', 'numReg',
+                            'maxSymb', 'maxDepth', 'maxNumState', 'numLin', 'numAsserts', 'maxRecDepth', 'LenConVars',
+                            'WEQVars', 'WeqLenVars', 'numITE']
+        #split into solvable and not solvable instances
+        notSolved = data[data['solver'] == -1]
+        solved = data[data['solver'] != -1]
+
+        # get duplicates and change class
+        duplicates = solved.duplicated(subset=columns_to_check, keep=False)
+        dominant_classes = solved.groupby(columns_to_check)['solver'].apply(lambda x: x.mode().iloc[0])
+        solved.loc[duplicates, 'solver'] = solved[duplicates].set_index(columns_to_check).index.map(
+            dominant_classes).values
+        # change class back if it could not solve anything
+        bestSolver = solved.loc[:, ['solver']].values.tolist()
+        path_index = solved.columns.get_loc("path")
+        possibleSolver = solved.iloc[:, path_index + 1:].values.tolist()
+
+        solver_list = []
+        for i in range(len(bestSolver)):
+            solverindex = bestSolver[i][0]
+            if possibleSolver[i][solverindex] == 0:
+                if 1 in possibleSolver[i]:
+                    ind = possibleSolver[i].index(1)
+                    solver_list.append(ind)
+            else:
+                solver_list.append(bestSolver[i][0])
+
+        solver_df = pd.DataFrame({'solver': solver_list}, dtype=int)
+        solved.update(solver_df)
+
+
+
+        if not notSolved.empty:
+            #if an unsolvable instance (tuple), was solved somewhere: set it to that class
+            solver_index = data.columns.get_loc('solver')
+            tmp = data.iloc[:, :solver_index].values.tolist()
+            notSolved_list = notSolved.iloc[:, :].values.tolist()
+
+            for i, item in enumerate(notSolved_list):
+                if item[:solver_index] in tmp:
+                    index_in_tmp = tmp.index(item[:solver_index])  # Index in tmp, where it occurs
+                    notSolved.iloc[i, notSolved.columns.get_loc('solver')] = data.iloc[
+                        index_in_tmp, data.columns.get_loc('solver')]
+
+            #split the new dataset again, into solvable and not solvable
+            notyetSolved = notSolved[notSolved['solver'] == -1]
+            solvedNew = notSolved[notSolved['solver'] != -1]
+
+            solvedNew = solvedNew.reset_index(drop=True)
+            solved = pd.concat([solved, solvedNew], axis=0).reset_index(drop=True)
+
+            #set unsolvable instances to the most dominant class
+            most_succesful_class = solved["solver"].value_counts().idxmax()
+            mscDF = pd.DataFrame([most_succesful_class] * len(notSolved.index), dtype=int)
+            notyetSolved= notyetSolved.reset_index(drop=True)
+            notyetSolved['solver'] = mscDF
+            solved = pd.concat([solved, notyetSolved], axis=0).reset_index(drop=True)
+            return solved
+        else:
+            return solved
+
     def create_report(self, dataframe, benchmarkName):
         report = "Report for Benchmark: " + benchmarkName + " with " + str(len(dataframe.index)) + " instances \n"
         report = report + "\n"
@@ -47,6 +111,7 @@ class Features:
 
     def trainAndTestDTC(self, dtc, data, Y, crit, depth, feat, split):
         y = Y.values.ravel()
+        y = np.array(y, dtype=int)
         X = data
         dtc.feature_names = X.columns
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -71,16 +136,21 @@ class Features:
         return viz
 
     def buildTree(self, data):
+        data1 = self.preprocess(data)
+        solver_index = data1.columns.get_loc("solver")
+        columns_to_drop = data1.columns[solver_index:]
+        # Parameter for Decision Tree
+        X = data1.drop(columns=columns_to_drop)
+
+        y = data1['solver']
+
         # Parameter for Decision Tree
         criterion = 'gini'
-        max_d = 10
+        max_d = 15
         max_f = None
         splitter = 'best'
-
-        Y = data["solver"]
-        data = data.drop(['solver', 'path'], axis=1)
         dtc = DecisionTreeClassifier()
-        return self.trainAndTestDTC(dtc, data, Y, criterion, max_d, max_f, splitter)
+        return self.trainAndTestDTC(dtc, X, y, criterion, max_d, max_f, splitter)
 
     @staticmethod
     def getName():
@@ -97,23 +167,32 @@ class Features:
         return self._output_folder
     
     def finalise(self, results, total):        
-        dataframe = pd.DataFrame(
-            columns=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
+
+        columns=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
                      "largestRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
                      "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
-                     "maxRecDepth", "LenConVars", "WEQVars", "WeqLenVars", "numITE", "solver", "path"], data=results)
+                     "maxRecDepth", "LenConVars", "WEQVars", "WeqLenVars", "numITE", "solver", "path"]
+        for i, s in enumerate(self.getSolvers()):
+            columns.append(s)
 
+        dataframe = pd.DataFrame(columns=columns, data=results)
+        path_index = dataframe.columns.get_loc("path")
+
+        # for the report the solvers in the end are not neccessary
+        reportDF = dataframe.iloc[:, :path_index + 1]
         path = os.path.join (self.getOutputFolder (),dataframe["path"][0].split(":")[0])
         os.makedirs(path, exist_ok=True)
         dataframe.to_csv(os.path.join (path,"features.csv"), index=False)
-        report = self.create_report(dataframe, dataframe["path"][0].split(":")[0])
-        viz = self.buildTree(dataframe[dataframe['solver'] != -1])
-        viz.save(os.path.join (path,"decisionTree.svg"))
-
-        
+        report = self.create_report(reportDF, reportDF["path"][0].split(":")[0])
         with open(f"{path}/report.txt", 'w') as f:
             f.write(report)
         f.close()
+
+        viz = self.buildTree(dataframe)
+        viz.save(os.path.join (path,"decisionTree.svg"))
+
+        
+
 
     def __call__(self, smtfile):
         intels = [smtquery.smtcon.exprfun.numSymbols,      #0
@@ -205,17 +284,24 @@ class Features:
         solvertime = 1000
         _storage = smtquery.config.getConfiguration().getStorage()
         res = _storage.getResultsForInstance(smtfile)
+        solverCheck = []
+        for i, s in enumerate(self.getSolvers()):
+            solverCheck.append(i)
         for i, s in enumerate(self.getSolvers()):
             if res[s]["result"] in [Result.NotSatisfied, Result.Satisfied]:
                 if res[s]["time"] < solvertime:
                     solvertime = res[s]["time"]
                     solverindex = i
+                solverCheck[i] = 1
+            else:
+                solverCheck[i] = 0
 
 
         s_row = [numStringVars, varRatio, numWEQ, numQWEQ, maxNumQVar, scopeCoincidence, largestRatioVarCon,
                  smallestRatioVarCon, largestRatioLR, smallestRatioLR, numReg, numRegSymbols, maxNesting, nfaStates, numLenCon,
                  numAsserts, maxRecDepth, LenConVars, WEQVars, WeqLenVars, numITE, solverindex, name]
-
+        for i in solverCheck:
+            s_row.append(i)
         return s_row
 
 
