@@ -20,34 +20,60 @@ def buildAnds(l):
 		out=f'({out} and {c})'
 	return out
 
-t_set = "*"
+def buildOrs(l):
+	out = l[0]
+	for c in l[1:]:
+		out=f'({out} or {c})'
+	return out
 
-cactus = ["Select LatexCactusPlot From *",
-        "Select LatexCactusPlot From * Where (((isCorrect(CVC5) and isSAT(CVC5)) or (isCorrect(Z3Str3) and isSAT(Z3Str3))) or (isCorrect(Z3Seq) and isSAT(Z3Seq)))",
-        "Select LatexCactusPlot From * Where ((isUNSAT(CVC5) or isUNSAT(Z3Str3)) or isUNSAT(Z3Seq))"]
+t_set = "amazon"
 
-
-pre = "Select Count From "+t_set+" Where "
-basis = ["(hasWEQ and ((not hasLinears) and (not hasRegex)))",
-		"(hasRegex and (((not hasLinears) and (not hasRegex)) and (not hasFactorRelation)))",
-		"(hasWEQ and (hasLinears and (not hasRegex)))",
-		"(hasWEQ and ((not hasLinears) and hasRegex))",
-		"(hasRegex and ((hasLinears and (not hasRegex)) and (not hasFactorRelation)))",
-		"(hasWEQ and (hasLinears and hasRegex))"]
-
-first = [f'{pre}({b} and (not hasHOL))' for b in basis]
-
-l = ["(not hasTransductions)","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "(not hasIndexOf)", "hasStringNumberConstraints"]
-second = [f'{pre}({b} and {buildAnds(l)})' for b in basis]
-
-l = ["hasTransductions","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "(not hasIndexOf)", "(not hasStringNumberConstraints)"]
-third = [f'{pre}({b} and {buildAnds(l)})' for b in basis]
-
-l = ["(not hasTransductions)","(not hasLexConstraints)","(not hasSubstring)","hasStringAt", "hasIndexOf", "(not hasStringNumberConstraints)"]
-fourth = [f'{pre}({b} and {buildAnds(l)})' for b in basis]
+cactus = ["Select LatexCactusPlot From "+t_set,
+        "Select LatexCactusPlot From "+t_set+" Where (((isCorrect(CVC5) and isSAT(CVC5)) or (isCorrect(Z3Str3) and isSAT(Z3Str3))) or (isCorrect(Z3Seq) and isSAT(Z3Seq)))",
+        "Select LatexCactusPlot From "+t_set+" Where ((isUNSAT(CVC5) or isUNSAT(Z3Str3)) or isUNSAT(Z3Seq))"]
 
 
-querys = cactus+first+second+third+fourth
+pre = "Select Count From "+t_set+" Where"
+
+basis = {"WEQ" : ["hasWEQ","(not hasLinears)", "(not hasRegex)", "(not isImplicitlyUniversal)"],
+		 "RE":  ["(not hasWEQ)","(not hasLinears)", "hasRegex", "(not hasFactorRelation)"],
+		 "WEQ+LEN":  ["hasWEQ","hasLinears", "(not hasRegex)", "(not isImplicitlyUniversal)"],
+		 "RE+LEN":  ["(not hasWEQ)","hasLinears", "hasRegex", "(not hasFactorRelation)"], 
+		 "WEQ+RE":  ["hasWEQ","(not hasLinears)", "hasRegex", "(not isImplicitlyUniversal)"],
+		 "WEQ+RE+LEN":  ["hasWEQ","hasLinears", "hasRegex", "(not isImplicitlyUniversal)"]
+		 }
+
+additions = { "NONE" : ["(not hasTransductions)","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "(not hasIndexOf)", "(not hasStringNumberConstraints)"],    # Table 1, exclude_all
+			  "SN" : ["(not hasTransductions)","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "(not hasIndexOf)", "hasStringNumberConstraints"],   # Table 2, string_number
+			  "R" : ["hasTransductions","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "(not hasIndexOf)", "(not hasStringNumberConstraints)"],     # Table 3, replacement
+			  "S" : ["(not hasTransductions)","(not hasLexConstraints)","hasSubstring","hasStringAt", "(not hasIndexOf)", "(not hasStringNumberConstraints)"],             # Table 4.a, substring
+			   "I" : ["(not hasTransductions)","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "hasIndexOf", "(not hasStringNumberConstraints)"],         # Table 4.b, indexof
+			}
+
+fragments = dict()
+for (a,aa) in additions.items():
+	for (f,ff) in basis.items():
+		fragments[f'{f}+{a}'] = ff+aa
+
+predicates = {k : buildAnds(fragments[k]) for k in fragments.keys()}
+
+
+
+# Dec Frags
+decidability = {"DEC"  : ["WEQ+NONE","RE+NONE","RE+LEN+NONE","RE+LEN+SN"],
+				"UDEC" : ["WEQ+LEN+SN","WEQ+RE+LEN+SN","RE+LEN+SN","WEQ+R","RE+R","WEQ+LEN+R","RE+LEN+R","WEQ+RE+R","WEQ+RE+LEN+R","WEQ+LEN+I"],
+				"UNK"  : ["WEQ+LEN+NONE","WEQ+RE+LEN+NONE", "WEQ+LEN+S"]				
+				}
+
+for (k,v) in decidability.items():
+	l = []
+	for kk in v:
+		l+=[predicates[kk]]
+	predicates[k] = buildOrs(l)
+
+queries = []
+for p in predicates.values():
+	queries+=[f'{pre} {p}']
 
 data = []
 try:
@@ -55,7 +81,7 @@ try:
 except Exception as e:
 	pass
 
-for i,q in enumerate(querys):
+for i,q in enumerate(queries):
     print(f"processing {q}")
     t = runner(q,'qlang')
     f_name = f"{output_path}/output_{i}_{int(time.time())}.txt"
