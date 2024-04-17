@@ -60,7 +60,7 @@ class OperatorPlot:
         df = df.sort_values(by='Occurrences', ascending=False)
         
         # Create a bar chart
-        ax = df.plot(kind='bar', x='Operation', y='Occurrences', legend=False, figsize=(10, 4))
+        ax = df.plot(kind='bar', x='Operation', y='Occurrences', legend=False, figsize=(10, 4),logy=True)
         ax.set_ylim(bottom=0)
         # Set the title and labels
         #ax.set_title('Occurrences of SMT-LIB QF_S Operations')
