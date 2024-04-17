@@ -176,20 +176,26 @@ class Features:
             columns.append(s)
 
         dataframe = pd.DataFrame(columns=columns, data=results)
-        path_index = dataframe.columns.get_loc("path")
+        unique_values = dataframe["path"].apply(lambda x: x.split(":")[0]).unique()
+        separate_dfs = []
+        for value in unique_values:
+            filtered_df = dataframe[dataframe["path"].apply(lambda x: x.split(":")[0]) == value]
+            filtered_df.reset_index(drop=True, inplace=True)
+            separate_dfs.append(filtered_df)
+        for df in separate_dfs:
+            path_index = df.columns.get_loc("path")
+            # for the report the solvers in the end are not neccessary
+            reportDF = df.iloc[:, :path_index + 1]
+            path = os.path.join (self.getOutputFolder (),df["path"][0].split(":")[0])
+            os.makedirs(path, exist_ok=True)
+            df.to_csv(os.path.join (path,"features.csv"), index=False)
+            report = self.create_report(reportDF, reportDF["path"][0].split(":")[0])
+            with open(f"{path}/report.txt", 'w') as f:
+                f.write(report)
+            f.close()
 
-        # for the report the solvers in the end are not neccessary
-        reportDF = dataframe.iloc[:, :path_index + 1]
-        path = os.path.join (self.getOutputFolder (),dataframe["path"][0].split(":")[0])
-        os.makedirs(path, exist_ok=True)
-        dataframe.to_csv(os.path.join (path,"features.csv"), index=False)
-        report = self.create_report(reportDF, reportDF["path"][0].split(":")[0])
-        with open(f"{path}/report.txt", 'w') as f:
-            f.write(report)
-        f.close()
-
-        viz = self.buildTree(dataframe)
-        viz.save(os.path.join (path,"decisionTree.svg"))
+            viz = self.buildTree(df)
+            viz.save(os.path.join (path,"decisionTree.svg"))
 
         
 
