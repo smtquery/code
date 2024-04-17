@@ -138,7 +138,8 @@ class allFeatures:
         X = data1.drop(columns=columns_to_drop)
 
         y = data1['solver']
-        rf = RandomForestClassifier(n_estimators=200, max_depth=None, max_features='sqrt', min_samples_leaf=1, min_samples_split=2, bootstrap=True, class_weight='balanced', criterion='entropy')
+
+        rf = RandomForestClassifier(n_estimators=100, max_depth=30, max_features='log2', min_samples_leaf=4, min_samples_split=5, bootstrap=True, class_weight=None, criterion='gini')
         self.trainAndTestRF(rf, X, y)
         return
 
