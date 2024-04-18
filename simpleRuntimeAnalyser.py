@@ -46,7 +46,7 @@ basis = {"WEQ" : ["hasWEQ","(not hasLinears)", "(not hasRegex)", "(not isImplici
 additions = { "NONE" : ["(not hasTransductions)","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "(not hasIndexOf)", "(not hasStringNumberConstraints)"],    # Table 1, exclude_all
 			  "SN" : ["(not hasTransductions)","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "(not hasIndexOf)", "hasStringNumberConstraints"],   # Table 2, string_number
 			  "R" : ["hasTransductions","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "(not hasIndexOf)", "(not hasStringNumberConstraints)"],     # Table 3, replacement
-			  "S" : ["(not hasTransductions)","(not hasLexConstraints)","hasSubstring","hasStringAt", "(not hasIndexOf)", "(not hasStringNumberConstraints)"],             # Table 4.a, substring
+			  "S" : ["(not hasTransductions)","(not hasLexConstraints)","(hasSubstring or hasStringAt)", "(not hasIndexOf)", "(not hasStringNumberConstraints)"],             # Table 4.a, substring
 			   "I" : ["(not hasTransductions)","(not hasLexConstraints)","(not hasSubstring)","(not hasStringAt)", "hasIndexOf", "(not hasStringNumberConstraints)"],         # Table 4.b, indexof
 			}
 
@@ -65,7 +65,7 @@ decidability = {"DEC"  : ["WEQ+NONE","RE+NONE","RE+LEN+NONE","RE+LEN+SN"],
 				"UNK"  : ["WEQ+LEN+NONE","WEQ+RE+LEN+NONE", "WEQ+LEN+S"]				
 				}
 
-s_pre = "Select LatexCactusPlot From "+t_set
+s_pre = "Select LatexCactusPlot From "+t_set+" Where"
 solvers = ["CVC5","Z3Seq","Z3Str3"]
 sf_queries = []
 s_preds = [f"isSAT({s})" for s in solvers]+[f"isUNSAT({s})" for s in solvers]
@@ -78,8 +78,8 @@ for (k,v) in decidability.items():
 	predicates[k] = buildOrs(l)
 
 	sf_queries+=[f'{s_pre} {predicates[k]}']
-	for s in s_preds:
-		sf_queries+=[f'{pre} {buildAnds([predicates[k],s])}']
+	#for s in s_preds:
+	#	sf_queries+=[f'{pre} {buildAnds([predicates[k],s])}']
 
 if False:
 	queries = []
