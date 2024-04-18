@@ -26,7 +26,7 @@ def buildOrs(l):
 		out=f'({out} or {c})'
 	return out
 
-t_set = "amazon"
+t_set = "*"
 
 cactus = ["Select LatexCactusPlot From "+t_set,
         "Select LatexCactusPlot From "+t_set+" Where (((isCorrect(CVC5) and isSAT(CVC5)) or (isCorrect(Z3Str3) and isSAT(Z3Str3))) or (isCorrect(Z3Seq) and isSAT(Z3Seq)))",
@@ -65,15 +65,30 @@ decidability = {"DEC"  : ["WEQ+NONE","RE+NONE","RE+LEN+NONE","RE+LEN+SN"],
 				"UNK"  : ["WEQ+LEN+NONE","WEQ+RE+LEN+NONE", "WEQ+LEN+S"]				
 				}
 
+s_pre = "Select LatexCactusPlot From "+t_set
+solvers = ["CVC5","Z3Seq","Z3Str3"]
+sf_queries = []
+s_preds = [f"isSAT({s})" for s in solvers]+[f"isUNSAT({s})" for s in solvers]
+
+
 for (k,v) in decidability.items():
 	l = []
 	for kk in v:
 		l+=[predicates[kk]]
 	predicates[k] = buildOrs(l)
 
-queries = []
-for p in predicates.values():
-	queries+=[f'{pre} {p}']
+	sf_queries+=[f'{s_pre} {predicates[k]}']
+	for s in s_preds:
+		sf_queries+=[f'{pre} {buildAnds([predicates[k],s])}']
+
+if False:
+	queries = []
+	for p in predicates.values():
+		queries+=[f'{pre} {p}']
+else:
+	queries = sf_queries
+
+
 
 data = []
 try:
