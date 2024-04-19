@@ -26,7 +26,8 @@ def buildOrs(l):
 		out=f'({out} or {c})'
 	return out
 
-t_set = "*"
+t_set = "amazon"
+solvers = ["CVC5","Z3Seq","Z3Str3"]
 
 cactus = ["Select LatexCactusPlot From "+t_set,
         "Select LatexCactusPlot From "+t_set+" Where (((isCorrect(CVC5) and isSAT(CVC5)) or (isCorrect(Z3Str3) and isSAT(Z3Str3))) or (isCorrect(Z3Seq) and isSAT(Z3Seq)))",
@@ -65,28 +66,41 @@ decidability = {"DEC"  : ["WEQ+NONE","RE+NONE","RE+LEN+NONE","RE+LEN+SN"],
 				"UNK"  : ["WEQ+LEN+NONE","WEQ+RE+LEN+NONE", "WEQ+LEN+S"]				
 				}
 
+# Initial Evalution
+slit_solver_preds = dict()
+slit_solver_preds["SAT"] = buildAnds([f"(isSAT({s}) and isCorrect({s}))" for s in solvers])
+slit_solver_preds["UNSAT"] = buildAnds([f"isUNSAT({s})" for s in solvers])
+slit_solver_preds["UNKNOWN"] = buildAnds([f"isUNKNOWN({s})" for s in solvers])
+
+
 s_pre = "Select LatexCactusPlot From "+t_set+" Where"
-solvers = ["CVC5","Z3Seq","Z3Str3"]
 sf_queries = []
-s_preds = [f"isSAT({s})" for s in solvers]+[f"isUNSAT({s})" for s in solvers]
+s_preds = [f"(isSAT({s}) and isCorrect({s}))" for s in solvers]+[f"isUNSAT({s})" for s in solvers]
+
+
 
 
 for (k,v) in decidability.items():
-	l = []
-	for kk in v:
-		l+=[predicates[kk]]
-	predicates[k] = buildOrs(l)
+    l = []
+    for kk in v:
+        l+=[predicates[kk]]
+    predicates[k] = buildOrs(l)
 
-	sf_queries+=[f'{s_pre} {predicates[k]}']
-	#for s in s_preds:
-	#	sf_queries+=[f'{pre} {buildAnds([predicates[k],s])}']
+    sf_queries+=[f'{s_pre} {predicates[k]}']
+    #for s in s_preds:
+    #   sf_queries+=[f'{pre} {buildAnds([predicates[k],s])}']
 
+
+"""
 if False:
-	queries = []
-	for p in predicates.values():
-		queries+=[f'{pre} {p}']
+    queries = []
+    for p in predicates.values():
+        queries+=[f'{pre} {p}']
 else:
-	queries = sf_queries
+    queries = sf_queries
+"""
+
+queries = [f'{pre} {q}' for q in slit_solver_preds.values()]
 
 
 
