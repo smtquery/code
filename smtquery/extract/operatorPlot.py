@@ -82,14 +82,15 @@ class OperatorPlot:
             'str.at': 0,         # Character at position
             'str.substr': 0,     # Substring
             'str.indexof': 0,    # Index of substring
-            'str.replace': 0,    # Replace substring
             'str.contains': 0,   # Check if contains substring
             'str.prefixof': 0,   # Check if prefix
             'str.suffixof': 0,   # Check if suffix
+            'str.replace': 0,    # Replace substring
+            'str.replace_all': 0,    # Replace substring
+            'str.replace_re': 0,    # Replace substring
+            'str.replace_re_all': 0,    # Replace substring
             'str.<': 0,          # Lexicographical less than
             'str.<=': 0,         # Lexicographical less or equal
-            'str.>': 0,          # Lexicographical greater than
-            'str.>=': 0,         # Lexicographical greater or equal
             'str.to_int': 0,     # Convert string to integer
             'str.from_int': 0,   # Convert integer to string
             'str.in_re': 0,      # String membership in regular expression
@@ -107,6 +108,8 @@ class OperatorPlot:
             're.range': 0,       # Regular expression of a range of characters
             're.comp': 0,        # Complement of a regular expression
             're.diff': 0,        # Difference of regular expressions
+            '_ re.^': 0,    # Exponentiation of a regular expression
+            '_ re.loop': 0 # Looping of a regular expression
         }
     
     def _prefix_split_ops(self,ops):
