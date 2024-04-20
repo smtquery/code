@@ -108,8 +108,8 @@ class OperatorPlot:
             're.range': 0,       # Regular expression of a range of characters
             're.comp': 0,        # Complement of a regular expression
             're.diff': 0,        # Difference of regular expressions
-            '_ re.^': 0,    # Exponentiation of a regular expression
-            '_ re.loop': 0 # Looping of a regular expression
+            #'_ re.^': 0,    # Exponentiation of a regular expression
+            #'_ re.loop': 0 # Looping of a regular expression
         }
     
     def _prefix_split_ops(self,ops):
