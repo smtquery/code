@@ -88,7 +88,7 @@ class Solver:
     
     def runSolverOnPath (self,smtpath,timeout = None)->VerificationResult:
         with tempfile.TemporaryDirectory () as tmpdir:
-            usepath = os.path.join (tmpdir,"input.smt")
+            usepath = os.path.join (tmpdir,"input.smt2")
             self.preprocessSMTFile (smtpath,usepath)
             timer = Timer ()
             try:
