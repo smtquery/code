@@ -13,7 +13,7 @@ class OperatorPlot:
     def getName ():
         return "OperatorPlot"
 
-    def finalise(self,results,total,count_opertors=False,split_ops=True):
+    def finalise(self,results,total,count_opertors=False,split_ops=False):
         res = [r for r in results if r != None]
         totalCount = len(res)
         if count_opertors:
@@ -25,6 +25,8 @@ class OperatorPlot:
             s_ops = self._prefix_split_ops(ops)
         else:
             s_ops = {"all" : ops}
+
+        print(s_ops)
         
         for p in s_ops.keys():
             self._plot_operations(s_ops[p],p)
@@ -60,7 +62,7 @@ class OperatorPlot:
         df = df.sort_values(by='Occurrences', ascending=False)
         
         # Create a bar chart
-        ax = df.plot(kind='bar', x='Operation', y='Occurrences', legend=False, figsize=(10, 4),logy=True)
+        ax = df.plot(color=['#000000'], kind='bar', x='Operation', y='Occurrences', legend=False, figsize=(10, 4),logy=True)
         ax.set_ylim(bottom=0)
         # Set the title and labels
         #ax.set_title('Occurrences of SMT-LIB QF_S Operations')
@@ -108,8 +110,8 @@ class OperatorPlot:
             're.range': 0,       # Regular expression of a range of characters
             're.comp': 0,        # Complement of a regular expression
             're.diff': 0,        # Difference of regular expressions
-            #'_ re.^': 0,    # Exponentiation of a regular expression
-            #'_ re.loop': 0 # Looping of a regular expression
+            're.^': 0,           # Exponentiation of a regular expression
+            're.loop': 0         # Looping of a regular expression
         }
     
     def _prefix_split_ops(self,ops):
