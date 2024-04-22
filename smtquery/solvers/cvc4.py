@@ -36,4 +36,4 @@ class CVC4(solver.Solver):
             new.write("\n(check-sat)")        
 
     def buildCMDList (self,smtfilepath):
-        return [self._path,"--lang","smtlib2.5","-m","--no-interactive-prompt","--strings-exp","--dump-models",smtfilepath]
+        return [self._path,"--lang","smtlib2.6","--no-interactive","--no-interactive-prompt","--strings-exp","--dump-models",smtfilepath]

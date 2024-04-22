@@ -26,7 +26,7 @@ def buildOrs(l):
 		out=f'({out} or {c})'
 	return out
 
-t_set = "pisa"
+t_set = "*"
 solvers = ["CVC5","Z3Seq","Z3Str3","CVC4","Z3Noodler","Ostrich"]
 init_s_preds = {"SAT" : buildOrs([f'(isCorrect({s}) and isSAT({s}))' for s in solvers]),
 				"UNSAT" : buildOrs([f'isUNSAT({s})' for s in solvers])}
@@ -93,17 +93,16 @@ for (k,v) in decidability.items():
     #   sf_queries+=[f'{pre} {buildAnds([predicates[k],s])}']
 
 
-"""
+
 if False:
     queries = []
     for p in predicates.values():
         queries+=[f'{pre} {p}']
 else:
     queries = sf_queries
-"""
 
 #queries = [f'{pre} {q}' for q in slit_solver_preds.values()]
-queries = cactus+selects
+#queries = cactus+selects
 
 
 data = []

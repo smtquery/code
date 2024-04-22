@@ -8,13 +8,13 @@ def getName ():
     return "smtsolver"
 
 def addArguments (parser):
-    parser.add_argument ('solver',type=str,default="CVC4")
-    parser.add_argument ('benchmark',type=str,default="dummbench")
-    parser.add_argument ('track',type=str,default="track")
-    parser.add_argument ('smtfile',type=str,default="model")
+    parser.add_argument ('--solver',type=str,default="CVC4")
+    parser.add_argument ('--benchmark',type=str,default="dummbench")
+    parser.add_argument ('--track',type=str,default="track")
+    parser.add_argument ('--smtfile',type=str,default="model")
 
 
-def run (args):    
+def run (args): 
     solver = smtquery.config.getConfiguration().getSolvers ().get(args.solver,None)    
     if not solver:
         message = f"Unknown solver {args.solver}"
