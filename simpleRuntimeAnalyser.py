@@ -26,13 +26,15 @@ def buildOrs(l):
 		out=f'({out} or {c})'
 	return out
 
-t_set = "amazon"
-solvers = ["CVC5","Z3Seq","Z3Str3"]
+t_set = "pisa"
+solvers = ["CVC5","Z3Seq","Z3Str3","CVC4","Z3Noodler","Ostrich"]
+init_s_preds = {"SAT" : buildOrs([f'(isCorrect({s}) and isSAT({s}))' for s in solvers]),
+				"UNSAT" : buildOrs([f'isUNSAT({s})' for s in solvers])}
+c_pre = "Select LatexCactusPlot From "+t_set
+s_pre = "Select Count From "+t_set
 
-cactus = ["Select LatexCactusPlot From "+t_set,
-        "Select LatexCactusPlot From "+t_set+" Where (((isCorrect(CVC5) and isSAT(CVC5)) or (isCorrect(Z3Str3) and isSAT(Z3Str3))) or (isCorrect(Z3Seq) and isSAT(Z3Seq)))",
-        "Select LatexCactusPlot From "+t_set+" Where ((isUNSAT(CVC5) or isUNSAT(Z3Str3)) or isUNSAT(Z3Seq))"]
-
+cactus = [c_pre]+[c_pre+" Where "+init_s_preds["SAT"]]+[c_pre+" Where "+init_s_preds["UNSAT"]]
+selects = [s_pre+" Where "+init_s_preds["SAT"]]+[s_pre+" Where "+init_s_preds["UNSAT"]]
 
 pre = "Select Count From "+t_set+" Where"
 
@@ -100,8 +102,8 @@ else:
     queries = sf_queries
 """
 
-queries = [f'{pre} {q}' for q in slit_solver_preds.values()]
-
+#queries = [f'{pre} {q}' for q in slit_solver_preds.values()]
+queries = cactus+selects
 
 
 data = []

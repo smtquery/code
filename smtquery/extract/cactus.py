@@ -116,7 +116,7 @@ class CactusPlot:
                 # \usepackage{pgfplots}
                 # \usepgfplotslibrary{fillbetween}
                 fillbetween+=['\\path[name path=axis'+str(s.replace('_','').replace('.',''))+'] (axis cs:0,0) -- (axis cs:'+str(data[len(data)-1][0])+',0);\n']
-                fillbetween+=['\\addplot [thick,color=colour'+str(s.replace('_','').replace('.',''))+',fill=colour'+str(s.replace('_','').replace('.',''))+',fill opacity=0.1] fill between [of=path'+str(s.replace('_','').replace('.',''))+' and axis'+str(s.replace('_','').replace('.',''))+'];\n']
+                fillbetween+=['\\addplot [thick,color=colour'+str(s.replace('_','').replace('.',''))+',fill=colour'+str(s.replace('_','').replace('.',''))+',fill opacity=0.1,forget plot] fill between [of=path'+str(s.replace('_','').replace('.',''))+' and axis'+str(s.replace('_','').replace('.',''))+'];\n']
 
 
                 output+='\\addlegendentry{'+str(s)+'}\n'
