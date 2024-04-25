@@ -376,3 +376,16 @@ class HasStringAt(Predicate):
         if len(set(str(c) for c in hol_c if str(c) in set({'str.at'}))) > 0:
             return smtquery.qlang.predicates.Trool.TT
         return smtquery.qlang.predicates.Trool.FF
+
+class IsRegexHeavy(Predicate):
+    def __init__(self,p):
+        super().__init__('isRegexHeavy', '0.0.1',[smtquery.smtcon.exprfun.HasAtom],p)
+
+    def __call__(self, smtfile):
+        atoms = self._probes.getIntel(smtfile,self._intels).get_intel()[self._probes.getIntelKey2Class(self._intels[0])]
+        weq_c = 0 if Kind.WEQ not in atoms else atoms[Kind.WEQ]
+        regex_c = 0 if Kind.REGEX_CONSTRAINT not in atoms else atoms[Kind.REGEX_CONSTRAINT]
+
+        if weq_c < regex_c:
+            return smtquery.qlang.predicates.Trool.TT
+        return smtquery.qlang.predicates.Trool.FF

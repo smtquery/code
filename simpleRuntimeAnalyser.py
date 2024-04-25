@@ -26,18 +26,19 @@ def buildOrs(l):
 		out=f'({out} or {c})'
 	return out
 
-t_set = "*"
+# initial setup
+t_set = "pisa"
 solvers = ["CVC5","Z3Seq","Z3Str3","CVC4","Z3Noodler","Ostrich"]
+cactus_pre = "Select LatexCactusPlot From "+t_set
+count_pre = "Select Count From "+t_set
+features_pre = "Select Features From"
+
+# Initial Evalution / SAT+UNSAT instances
 init_s_preds = {"SAT" : buildOrs([f'(isCorrect({s}) and isSAT({s}))' for s in solvers]),
-				"UNSAT" : buildOrs([f'isUNSAT({s})' for s in solvers])}
-c_pre = "Select LatexCactusPlot From "+t_set
-s_pre = "Select Count From "+t_set
+				"UNSAT" : "("+buildOrs([f'isUNSAT({s})' for s in solvers])+" and (not "+buildOrs([f'(isCorrect({s}) and isSAT({s}))' for s in solvers])+"))" }
 
-cactus = [c_pre]+[c_pre+" Where "+init_s_preds["SAT"]]+[c_pre+" Where "+init_s_preds["UNSAT"]]
-selects = [s_pre+" Where "+init_s_preds["SAT"]]+[s_pre+" Where "+init_s_preds["UNSAT"]]
 
-pre = "Select Count From "+t_set+" Where"
-
+# Build fragments
 basis = {"WEQ" : ["hasWEQ","(not hasLinears)", "(not hasRegex)", "(not isImplicitlyUniversal)"],
 		 "RE":  ["(not hasWEQ)","(not hasLinears)", "hasRegex", "(not hasFactorRelation)"],
 		 "WEQ+LEN":  ["hasWEQ","hasLinears", "(not hasRegex)", "(not isImplicitlyUniversal)"],
@@ -60,50 +61,37 @@ for (a,aa) in additions.items():
 
 predicates = {k : buildAnds(fragments[k]) for k in fragments.keys()}
 
-
-
 # Dec Frags
 decidability = {"DEC"  : ["WEQ+NONE","RE+NONE","RE+LEN+NONE","RE+LEN+SN"],
 				"UDEC" : ["WEQ+LEN+SN","WEQ+RE+LEN+SN","RE+LEN+SN","WEQ+R","RE+R","WEQ+LEN+R","RE+LEN+R","WEQ+RE+R","WEQ+RE+LEN+R","WEQ+LEN+I"],
 				"UNK"  : ["WEQ+LEN+NONE","WEQ+RE+LEN+NONE", "WEQ+LEN+S"]				
 				}
 
-# Initial Evalution
-slit_solver_preds = dict()
-slit_solver_preds["SAT"] = buildAnds([f"(isSAT({s}) and isCorrect({s}))" for s in solvers])
-slit_solver_preds["UNSAT"] = buildAnds([f"isUNSAT({s})" for s in solvers])
-slit_solver_preds["UNKNOWN"] = buildAnds([f"isUNKNOWN({s})" for s in solvers])
+# Features
+bench_folder = "./data/smtfiles"
 
+### BUILD Queries
+queries = []
 
-s_pre = "Select LatexCactusPlot From "+t_set+" Where"
-sf_queries = []
-s_preds = [f"(isSAT({s}) and isCorrect({s}))" for s in solvers]+[f"isUNSAT({s})" for s in solvers]
+# Figure 6 and counts
+queries+=[cactus_pre]+[cactus_pre+" Where "+init_s_preds["SAT"]]+[cactus_pre+" Where "+init_s_preds["UNSAT"]]  # Plots
+queries+=[count_pre+" Where "+init_s_preds["SAT"]]+[count_pre+" Where "+init_s_preds["UNSAT"]]                 # Counting
 
+# Figure 7
+queries+=["Select OperatorPlot From "+t_set]
 
+# Fragments -- Section 3.3 
+for p in predicates.values():
+	queries+=[f'{count_pre} Where {p}']
 
-
+# Decidability -- Section 3.3 
 for (k,v) in decidability.items():
-    l = []
-    for kk in v:
-        l+=[predicates[kk]]
-    predicates[k] = buildOrs(l)
+	predicates[k] = buildOrs([predicates[kk] for kk in v])
+	queries+=[f'{count_pre} Where {predicates[k]}']            # Counting
+	queries+=[f'{cactus_pre} Where {predicates[k]}']            # Plots
 
-    sf_queries+=[f'{s_pre} {predicates[k]}']
-    #for s in s_preds:
-    #   sf_queries+=[f'{pre} {buildAnds([predicates[k],s])}']
-
-
-
-if False:
-    queries = []
-    for p in predicates.values():
-        queries+=[f'{pre} {p}']
-else:
-    queries = sf_queries
-
-#queries = [f'{pre} {q}' for q in slit_solver_preds.values()]
-#queries = cactus+selects
-
+# Features
+queries+=[f'{features_pre} {o}' for o in os.listdir(bench_folder) if os.path.isdir(os.path.join(bench_folder,o))]+["Select AllFeatures From *"]
 
 data = []
 try:

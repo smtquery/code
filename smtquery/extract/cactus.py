@@ -104,7 +104,7 @@ class CactusPlot:
             fillbetween = []
             data = self._accumulatePoints(cactus_data[s])
             sColour = colours[s][0]
-            if (len(cactus_data) > 0):                
+            if (len(data) > 0):                
                 output = ('\n\\addplot[name path=path'+str(s.replace('_','').replace('.',''))+' , colour'+str(s.replace('_','').replace('.',''))+', line width=1.5pt, solid] coordinates {')
 
                 for (x,y) in data:

@@ -130,6 +130,7 @@ class Probes:
             "hasIndexOf" : smtquery.predicates.predicates.HasIndexOf(p), 
             "hasSubstring" : smtquery.predicates.predicates.HasSubstring(p), 
             "hasStringAt" : smtquery.predicates.predicates.HasStringAt(p), 
+            "isRegexHeavy" :  smtquery.predicates.predicates.IsRegexHeavy(p)
         }
 
     @staticmethod
