@@ -293,4 +293,4 @@ class allFeatures:
         return s_row
 
 def PullExtractor():
-    return [allFeatures]
+    return []#[allFeatures]

@@ -32,6 +32,7 @@ solvers = ["CVC5","Z3Seq","Z3Str3","CVC4","Z3Noodler","Ostrich"]
 cactus_pre = "Select LatexCactusPlot From "+t_set
 count_pre = "Select Count From "+t_set
 features_pre = "Select Features From"
+dt_pre = "Select DecisionTree From"
 
 # Initial Evalution / SAT+UNSAT instances
 init_s_preds = {"SAT" : buildOrs([f'(isCorrect({s}) and isSAT({s}))' for s in solvers]),
@@ -91,7 +92,9 @@ for (k,v) in decidability.items():
 	queries+=[f'{cactus_pre} Where {predicates[k]}']            # Plots
 
 # Features
-queries+=[f'{features_pre} {o}' for o in os.listdir(bench_folder) if os.path.isdir(os.path.join(bench_folder,o))]+["Select AllFeatures From *"]
+queries+=[f'{features_pre} {o}' for o in os.listdir(bench_folder) if os.path.isdir(os.path.join(bench_folder,o))]+[f'{dt_pre} {o}' for o in os.listdir(bench_folder) if os.path.isdir(os.path.join(bench_folder,o))]
+
+queries=[f'{dt_pre} {o}' for o in os.listdir(bench_folder) if os.path.isdir(os.path.join(bench_folder,o))]
 
 data = []
 try:

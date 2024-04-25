@@ -19,11 +19,16 @@ from sklearn import tree
 from dtreeviz.trees import dtreeviz
 import smtquery.config
 import numpy as np
+import time
+
 
 class Features:
+    _buildDTC = False
+    _solvers = None
+    _output_folder = None
+
     def __init__(self):
-        self._solvers = None
-        self._output_folder = None
+        pass
 
     def preprocess(self, data):
         columns_to_check = ['numStringVar', 'varRatio', 'numWEQ', 'numQWEQ', 'maxNumOfQVar', 'scopeIncidence',
@@ -154,7 +159,7 @@ class Features:
 
     @staticmethod
     def getName():
-        return "Features"
+        return "FeaturesAux"
 
     def getSolvers (self):
         if self._solvers == None:
@@ -163,42 +168,41 @@ class Features:
 
     def getOutputFolder (self):
         if self._output_folder == None:
-            self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"Features")
+            if self._buildDTC:
+                self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"DecisionTree")
+            else:
+                self._output_folder = os.path.join(smtquery.config.getConfiguration ().getOutputLocation (),"Features")
         return self._output_folder
     
     def finalise(self, results, total):        
-
         columns=["numStringVar", "varRatio", "numWEQ", "numQWEQ", "maxNumOfQVar", "scopeIncidence",
                      "largestRatioVarCon", "smallestRatioVarCon", "largestRatioLR", "smallestRatioLR",
                      "numReg", "maxSymb", "maxDepth", "maxNumState", "numLin", "numAsserts",
                      "maxRecDepth", "LenConVars", "WEQVars", "WeqLenVars", "numITE", "solver", "path"]
+
         for i, s in enumerate(self.getSolvers()):
             columns.append(s)
 
         dataframe = pd.DataFrame(columns=columns, data=results)
-        unique_values = dataframe["path"].apply(lambda x: x.split(":")[0]).unique()
-        separate_dfs = []
-        for value in unique_values:
-            filtered_df = dataframe[dataframe["path"].apply(lambda x: x.split(":")[0]) == value]
-            filtered_df.reset_index(drop=True, inplace=True)
-            separate_dfs.append(filtered_df)
-        for df in separate_dfs:
-            path_index = df.columns.get_loc("path")
-            # for the report the solvers in the end are not neccessary
-            reportDF = df.iloc[:, :path_index + 1]
-            path = os.path.join (self.getOutputFolder (),df["path"][0].split(":")[0])
-            os.makedirs(path, exist_ok=True)
-            df.to_csv(os.path.join (path,"features.csv"), index=False)
+        path = os.path.join (self.getOutputFolder(),str(int(time.time())))
+        os.makedirs(path, exist_ok=True)
+
+
+        if not self._buildDTC:
+            # export features.csv
+            dataframe.to_csv(os.path.join(path, "features.csv"), index=False)
+
+            # gen report
+            path_index = dataframe.columns.get_loc("path")
+            reportDF = dataframe.iloc[:, :path_index + 1]
             report = self.create_report(reportDF, reportDF["path"][0].split(":")[0])
             with open(f"{path}/report.txt", 'w') as f:
                 f.write(report)
-            f.close()
 
-            viz = self.buildTree(df)
-            viz.save(os.path.join (path,"decisionTree.svg"))
-
-        
-
+        else: 
+            # build decision tree
+            viz = self.buildTree(dataframe)
+            viz.save(os.path.join (path,"decisionTree.svg"))   
 
     def __call__(self, smtfile):
         intels = [smtquery.smtcon.exprfun.numSymbols,      #0
@@ -287,7 +291,7 @@ class Features:
         numAsserts = len(ast)
         name = smtfile.getName()
         solverindex = -1
-        solvertime = 1000
+        solvertime = smtquery.config.getConfiguration().getRunParameters()["timeout"]
         _storage = smtquery.config.getConfiguration().getStorage()
         res = _storage.getResultsForInstance(smtfile)
         solverCheck = []
@@ -311,7 +315,18 @@ class Features:
         return s_row
 
 
+class FeatureEx(Features):
+    _buildDTC = False
+    @staticmethod
+    def getName ():
+        return "Features"
+    
+class DecisionTree(Features):
+    _buildDTC = True
+    @staticmethod
+    def getName ():
+        return "DecisionTree"
 
 def PullExtractor():
-    return [Features]
+    return [FeatureEx,DecisionTree]
 
