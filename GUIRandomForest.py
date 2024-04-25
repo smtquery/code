@@ -33,7 +33,7 @@ class InputBox:
         self.predict_button.pack(side=tk.TOP, padx=5, pady=5)
 
     def predict(self):
-        # Laden des Random Forest-Modells
+        # Laden des Random Forest-Models
         try:
             rf_model = joblib.load("random_forest.joblib")
         except FileNotFoundError:
@@ -52,7 +52,7 @@ class InputBox:
         # Durchführen der Vorhersage
         input_values = np.array(input_values).reshape(1, -1)
         prediction = rf_model.predict(input_values)
-        solver = ['Z3Str3', 'Z3Seq', 'CVC5', 'CVC4', 'Ostrich']
+        solver = ['Z3Str3', 'Z3Seq', 'CVC5', 'CVC4', 'Ostrich', 'Z3Noodler']
         # Anzeige der Vorhersage in einer Box
         messagebox.showinfo("Prediction", f" {solver[prediction[0]]}")
 
